@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LabQC — Sistema de Control de Calidad</title>
+<link rel="stylesheet" href="css/styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header class="topbar">
+  <!-- Module selector -->
+  <div class="module-switcher-wrap">
+    <button class="module-switcher-btn" id="module-toggle">
+      <span class="module-icon" id="module-icon">◈</span>
+      <span class="module-name" id="module-name">Estabilidades</span>
+      <span class="module-arrow">▾</span>
+    </button>
+    <div class="module-dropdown hidden" id="module-dropdown">
+      <div class="module-dropdown-head">Módulos del sistema</div>
+      <button class="module-opt active" data-module="est" id="mod-est">
+        <span class="mod-icon">◈</span>
+        <div><div class="mod-label">Estabilidades</div><div class="mod-sub">Control de estudios GxP</div></div>
+      </button>
+      <button class="module-opt" data-module="scrum" id="mod-scrum">
+        <span class="mod-icon">◉</span>
+        <div><div class="mod-label">SCRUM</div><div class="mod-sub">Control de liberación de lotes</div></div>
+      </button>
+      <div class="module-opt-sep" id="mod-users-sep" style="display:none"></div>
+      <button class="module-opt" data-module="users" id="mod-users" style="display:none">
+        <span class="mod-icon">◎</span>
+        <div><div class="mod-label">Usuarios</div><div class="mod-sub">Gestión de accesos y roles</div></div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Nav — rendered by JS based on module + role -->
+  <nav class="nav" id="main-nav"></nav>
+
+  <!-- User switcher -->
+  <div class="user-switcher-wrap">
+    <button class="user-switcher-btn" id="user-switcher-toggle">
+      <div class="avatar" id="topbar-avatar">MG</div>
+      <div class="user-meta">
+        <span class="user-name" id="topbar-name">M. García</span>
+        <span class="user-role-badge" id="topbar-role">Analista</span>
+      </div>
+      <span class="switcher-arrow">▾</span>
+    </button>
+    <div class="user-dropdown hidden" id="user-dropdown">
+      <div class="user-dropdown-head">Cambiar usuario (demo)</div>
+      <div id="user-list"></div>
+    </div>
+  </div>
+</header>
+
+<main class="main" id="main-content">
+  <!-- Pages rendered dynamically by JS -->
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
