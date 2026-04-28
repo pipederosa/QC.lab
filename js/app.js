@@ -22,14 +22,7 @@ const PERMISSIONS_MATRIX = [
   {action:'Gestión de usuarios',         viewer:false,analyst:false,supervisor:false,admin:true},
 ];
 
-let USERS_LIST = [
-  {id:1,nombre:'M. García',   usuario:'mgarcia',   email:'mgarcia@lab.com',   rol:'analyst',   planta:'todas',    estado:'activo',  lastLogin:'15/04/2026 09:12',initials:'MG'},
-  {id:2,nombre:'S. López',    usuario:'slopez',    email:'slopez@lab.com',    rol:'analyst',   planta:'Planta 2', estado:'activo',  lastLogin:'15/04/2026 08:45',initials:'SL'},
-  {id:3,nombre:'R. Pérez',    usuario:'rperez',    email:'rperez@lab.com',    rol:'supervisor',planta:'todas',    estado:'activo',  lastLogin:'14/04/2026 17:30',initials:'RP'},
-  {id:4,nombre:'Admin Sistema',usuario:'admin',    email:'admin@lab.com',     rol:'admin',     planta:'todas',    estado:'activo',  lastLogin:'15/04/2026 07:00',initials:'AS'},
-  {id:5,nombre:'J. Fernández',usuario:'jfernandez',email:'jfernandez@lab.com',rol:'viewer',    planta:'Planta 1', estado:'activo',  lastLogin:'13/04/2026 11:08',initials:'JF'},
-  {id:6,nombre:'L. Martínez', usuario:'lmartinez', email:'lmartinez@lab.com', rol:'analyst',   planta:'Planta 1', estado:'inactivo',lastLogin:'01/03/2026 09:00',initials:'LM'},
-];
+let USERS_LIST = [];
 
 /* ============ STATE ============ */
 let currentUser   = USERS_LIST[0];
@@ -49,7 +42,12 @@ let scrumDetailEditMode = false;
 let editingUserId = null;
 
 /* ============ INIT ============ */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  USERS_LIST  = await dbGetUsers();
+  STUDIES     = await dbGetStudies();
+  SCRUM_RECORDS = await dbGetScrum();
+  AUDIT_LOG   = await dbGetAudit();
+  currentUser = USERS_LIST[0];
   bindModuleSwitcher();
   bindUserSwitcher();
   closeDropdownsOnOutsideClick();
