@@ -441,7 +441,7 @@ let currentEstDetailId = null;
 
 function showEstDetail(id) {
   currentEstDetailId = id;
-  detailEditMode = ROLES[currentUser.rol].canEdit;
+  detailEditMode = false;
   currentPage = 'full';
   renderNav();
   renderContent();
@@ -897,7 +897,7 @@ function exportScrumXLSX(){
 let currentScrumDetailId = null;
 
 function showScrumDetail(id) {
-  currentScrumDetailId=id; detailEditMode=ROLES[currentUser.rol].canEdit;
+  currentScrumDetailId=id; detailEditMode=false;
   currentPage='full'; renderNav(); renderContent();
 }
 
