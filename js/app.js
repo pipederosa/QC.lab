@@ -47,6 +47,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   STUDIES     = await dbGetStudies();
   SCRUM_RECORDS = await dbGetScrum();
   AUDIT_LOG   = await dbGetAudit();
+  if (!USERS_LIST || USERS_LIST.length === 0) {
+      document.body.innerHTML = '<div style="padding:40px;color:red">Error conectando a supabase. Revisá la consola.</div>';
+  }
   currentUser = USERS_LIST[0];
   bindModuleSwitcher();
   bindUserSwitcher();
