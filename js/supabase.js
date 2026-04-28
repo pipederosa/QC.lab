@@ -2,8 +2,8 @@
    supabase.js — Conexión y funciones de base de datos
    ============================================================ */
 
-const SUPABASE_URL = 'PEGA_AQUI_TU_PROJECT_URL';
-const SUPABASE_KEY = 'PEGA_AQUI_TU_ANON_KEY';
+const SUPABASE_URL = 'https://rszdmnhyasfwnbcmbhim.supabase.co/rest/v1/';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzemRtbmh5YXNmd25iY21iaGltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODYxNzQsImV4cCI6MjA5Mjk2MjE3NH0.g9SfYaEURMOVuSrcHiPY8y-uA5xrbQJn0F34ca-iEEQ';
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
