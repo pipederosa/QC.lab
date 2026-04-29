@@ -668,7 +668,7 @@ async function submitEstForm() {
   const entry = {who:currentUser.nombre,what:`Creó estudio: ${prod} (${lote}) · ${planta}`,when:nowStr(),field:'creación',old:'',new:lote,study:saved.id,module:'est'};
   AUDIT_LOG.unshift(entry);
   await dbInsertAudit(entry);
-  alert(Estudio guardado: ${prod} — ${lote});
+  alert(`Estudio guardado: ${prod} — ${lote}`);
   navigateTo('results');
 }
 
