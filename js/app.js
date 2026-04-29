@@ -5,21 +5,24 @@
 
 /* ============ ROLES ============ */
 const ROLES = {
-  viewer:     { label:'Viewer',     color:'#888780', canEdit:false, canCreate:false, canApprove:false, canAdmin:false, canAudit:false, canUsers:false },
-  analyst:    { label:'Analista',   color:'#185FA5', canEdit:true,  canCreate:true,  canApprove:false, canAdmin:false, canAudit:false, canUsers:false },
-  supervisor: { label:'Supervisor', color:'#854F0B', canEdit:true,  canCreate:true,  canApprove:true,  canAdmin:false, canAudit:true,  canUsers:false },
-  admin:      { label:'Admin',      color:'#3B6D11', canEdit:true,  canCreate:true,  canApprove:true,  canAdmin:true,  canAudit:true,  canUsers:true  },
+  viewer:     { label:'Viewer',     color:'#888780', canEdit:false, canEditEst:false, canCreate:false, canCreateEst:false, canApprove:false, canAdmin:false, canAudit:false, canUsers:false },
+  analyst:    { label:'Analista',   color:'#185FA5', canEdit:true,  canEditEst:false, canCreate:true,  canCreateEst:false, canApprove:false, canAdmin:false, canAudit:false, canUsers:false },
+  analyst_est: { label:'Analista estabilidades',   color:'#185FA5', canEdit:true,  canEditEst:true, canCreate:true,  canCreateEst:true, canApprove:false, canAdmin:false, canAudit:false, canUsers:false },
+  supervisor: { label:'Supervisor', color:'#854F0B', canEdit:true,  canEditEst:true, canCreate:true, canEditEst:true,  canApprove:true,  canAdmin:false, canAudit:true,  canUsers:false },
+  admin:      { label:'Admin',      color:'#3B6D11', canEdit:true,  canEditEst:true, canCreate:true,  canEditEst:true, canApprove:true,  canAdmin:true,  canAudit:true,  canUsers:true  },
 };
 
 const PERMISSIONS_MATRIX = [
-  {action:'Ver Dashboard y resultados',  viewer:true, analyst:true, supervisor:true, admin:true},
-  {action:'Ver detalle de registros',    viewer:true, analyst:true, supervisor:true, admin:true},
-  {action:'Exportar CSV / Excel',        viewer:true, analyst:true, supervisor:true, admin:true},
-  {action:'Editar campos en detalle',    viewer:false,analyst:true, supervisor:true, admin:true},
-  {action:'Crear nuevos estudios/lotes', viewer:false,analyst:true, supervisor:true, admin:true},
-  {action:'Aprobar estudios',            viewer:false,analyst:false,supervisor:true, admin:true},
-  {action:'Ver módulo de Actividad',     viewer:false,analyst:false,supervisor:true, admin:true},
-  {action:'Gestión de usuarios',         viewer:false,analyst:false,supervisor:false,admin:true},
+  {action:'Ver Dashboard, Resultados y Detalle de SCRUM',        viewer:true,  analyst:true,  analyst_est:true,  supervisor:true,  admin:true},
+  {action:'Editar campos en detalle de SCRUM',                   viewer:false, analyst:true,  analyst_est:true,  supervisor:true,  admin:true},
+  {action:'Crear nuevos estudios/lotes en SCRUM',                viewer:false, analyst:true,  analyst_est:true,  supervisor:true,  admin:true},
+  {action:'Ver Dashboard, Resultados y Detalle de ESTABILIDADES',viewer:true,  analyst:true,  analyst_est:true,  supervisor:true,  admin:true},
+  {action:'Editar campos en detalle de ESTABILIDADES',           viewer:false, analyst:false, analyst_est:true,  supervisor:true,  admin:true},
+  {action:'Crear nuevos estudios/lotes en ESTABILIDADES',        viewer:false, analyst:false, analyst_est:true,  supervisor:true,  admin:true},
+  {action:'Exportar CSV/Excel',                                  viewer:true,  analyst:true,  analyst_est:true,  supervisor:true,  admin:true},
+  {action:'Aprobar estudios',                                    viewer:false, analyst:false, analyst_est:false, supervisor:true,  admin:true},
+  {action:'Ver módulo de Actividad',                             viewer:false, analyst:false, analyst_est:false, supervisor:true,  admin:true},
+  {action:'Gestión de usuarios',                                 viewer:false, analyst:false, analyst_est:false, supervisor:false, admin:true},
 ];
 
 let USERS_LIST = [];
