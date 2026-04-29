@@ -665,7 +665,7 @@ async function submitEstForm() {
  const saved = await dbInsertStudy(ns);
   if (!saved) { alert('Error al guardar en Supabase.'); return; }
   STUDIES.push(saved);
-  const entry = {who:currentUser.nombre,what:'Creó estudio: ${prod} (${lote}) · ${planta},when:nowStr(),field:'creación',old:'',new:lote,study:saved.id,module:'est'};
+  const entry = {who:currentUser.nombre,what:'Creó estudio: ${prod} (${lote}) · ${planta}',when:nowStr(),field:'creación',old:'',new:lote,study:saved.id,module:'est'};
   AUDIT_LOG.unshift(entry);
   await dbInsertAudit(entry);
   alert(Estudio guardado: ${prod} — ${lote});
@@ -1000,7 +1000,7 @@ async function submitScrumForm() {
   const saved = await dbInsertScrum(nr);
   if (!saved) { alert('Error al guardar en Supabase.'); return; }
   SCRUM_RECORDS.push(saved);
-  const entry = {who:currentUser.nombre,what:'SCRUM: Creó lote ${cod} (${desc}, ${lote}) · ${planta},when:nowStr(),field:'creación',old:'',new:cod,study:saved.id,module:'scrum'};
+  const entry = {who:currentUser.nombre,what:'SCRUM: Creó lote ${cod} (${desc}, ${lote}) · ${planta}',when:nowStr(),field:'creación',old:'',new:cod,study:saved.id,module:'scrum'};
   AUDIT_LOG.unshift(entry);
   await dbInsertAudit(entry);
   alert(Lote guardado: ${desc} — ${lote});
@@ -1128,7 +1128,7 @@ async function saveUser() {
       Object.assign(u,{nombre,usuario,email,rol,planta:v('uf-planta')||'todas',estado:v('uf-estado')||'activo'});
       const {error} = await sb.from('users_list').update({nombre,usuario,email,rol,planta:u.planta,estado:u.estado}).eq('id',editingUserId);
       if(error){console.error(error);alert('Error al guardar en Supabase.');return;}
-      const entry={who:currentUser.nombre,what:'Editó usuario ${usuario}: rol "${oldRol}" → "${rol}",when:nowStr(),field:'usuario',old:oldRol,new:rol,study:null,module:'sys'};
+      const entry={who:currentUser.nombre,what:'Editó usuario ${usuario}: rol "${oldRol}" → "${rol}",when:nowStr()',field:'usuario',old:oldRol,new:rol,study:null,module:'sys'};
       AUDIT_LOG.unshift(entry);
       await dbInsertAudit(entry);
     }
@@ -1138,7 +1138,7 @@ async function saveUser() {
     const {data,error} = await sb.from('users_list').insert(newU).select().single();
     if(error){console.error(error);alert('Error al guardar en Supabase.');return;}
     USERS_LIST.push({...data, lastLogin: data.last_login});
-    const entry={who:currentUser.nombre,what:'Creó usuario ${usuario} con rol ${rol},when:nowStr(),field:'usuario',old:'',new:usuario,study:null,module:'sys'};
+    const entry={who:currentUser.nombre,what:'Creó usuario ${usuario} con rol ${rol}',when:nowStr(),field:'usuario',old:'',new:usuario,study:null,module:'sys'};
     AUDIT_LOG.unshift(entry);
     await dbInsertAudit(entry);
   }
@@ -1187,7 +1187,7 @@ async function saveField(mod, id, key, newVal) {
   // Guardar en audit log local y Supabase
   const entry = {
     who: currentUser.nombre,
-    what: 'Editó "${key}" en ${rec.prod||rec.desc||''} (${rec.lote}): "${oldVal||'—'}" → "${newVal||'—'}",
+    what: 'Editó "${key}" en ${rec.prod||rec.desc||''} (${rec.lote}): "${oldVal||'—'}" → "${newVal||'—'}"',
     when: nowStr(), field: key,
     old: String(oldVal||''), new: String(newVal||''),
     study: id, module: mod
