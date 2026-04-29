@@ -1134,7 +1134,7 @@ async function saveUser() {
     }
   } else {
     const initials=nombre.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-    const newU={nombre,usuario,email,rol,planta:v('uf-planta')||'todas',estado:v('uf-estado')||'activo',last_login:'Nunca',initials};
+    const newU={nombre,usuario,email,rol,planta:v('uf-planta')||'todas',estado:v('uf-estado')||'activo',last_login:'Nunca',initials:initials};
     const {data,error} = await sb.from('users_list').insert(newU).select().single();
     if(error){console.error(error);alert('Error al guardar en Supabase.');return;}
     USERS_LIST.push({...data, lastLogin: data.last_login});
