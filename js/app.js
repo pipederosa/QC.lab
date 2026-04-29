@@ -1142,12 +1142,29 @@ function toggleUserStatus(id){
 /* ============================================================
    SHARED: saveField (edición inline en detalle)
    ============================================================ */
-function saveField(mod, id, key, newVal) {
-  const src = mod==='est'?STUDIES:SCRUM_RECORDS;
-  const rec = src.find(x=>x.id===id);if(!rec)return;
-  const oldVal=rec[key];if(String(oldVal)===String(newVal))return;
-  rec[key]=newVal;
-  AUDIT_LOG.unshift({who:currentUser.nombre,what:`Editó "${key}" en ${rec.prod||rec.desc||''} (${rec.lote}): "${oldVal||'—'}" → "${newVal||'—'}"`,when:nowStr(),field:key,old:String(oldVal||''),new:String(newVal||''),study:id,module:mod});
+async function saveField(mod, id, key, newVal) {
+  const src = mod==='est' ? STUDIES : SCRUM_RECORDS;
+  const rec = src.find(x=>x.id===id); if(!rec) return;
+  const oldVal = rec[key]; if(String(oldVal)===String(newVal)) return;
+  rec[key] = newVal;
+
+  // Guardar en Supabase
+  if (mod==='est') {
+    await dbUpdateStudy(id, rec);
+  } else {
+    await dbUpdateScrum(id, rec);
+  }
+
+  // Guardar en audit log local y Supabase
+  const entry = {
+    who: currentUser.nombre,
+    what: Editó "${key}" en ${rec.prod||rec.desc||''} (${rec.lote}): "${oldVal||'—'}" → "${newVal||'—'}",
+    when: nowStr(), field: key,
+    old: String(oldVal||''), new: String(newVal||''),
+    study: id, module: mod
+  };
+  AUDIT_LOG.unshift(entry);
+  await dbInsertAudit(entry);
 }
 
 /* ============================================================
