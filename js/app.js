@@ -665,7 +665,7 @@ async function submitEstForm() {
  const saved = await dbInsertStudy(ns);
   if (!saved) { alert('Error al guardar en Supabase.'); return; }
   STUDIES.push(saved);
-  const entry = {who:currentUser.nombre,what:Creó estudio: ${prod} (${lote}) · ${planta},when:nowStr(),field:'creación',old:'',new:lote,study:saved.id,module:'est'};
+  const entry = {who:currentUser.nombre,what:'Creó estudio: ${prod} (${lote}) · ${planta}',when:nowStr(),field:'creación',old:'',new:lote,study:saved.id,module:'est'};
   AUDIT_LOG.unshift(entry);
   await dbInsertAudit(entry);
   alert(Estudio guardado: ${prod} — ${lote});
