@@ -5,24 +5,21 @@
 
 /* ============ ROLES ============ */
 const ROLES = {
-  viewer:     { label:'Viewer',     color:'#888780', canEdit:false, canEditEst:false, canCreate:false, canCreateEst:false, canApprove:false, canAdmin:false, canAudit:false, canUsers:false },
-  analyst:    { label:'Analista',   color:'#185FA5', canEdit:true,  canEditEst:false, canCreate:true,  canCreateEst:false, canApprove:false, canAdmin:false, canAudit:false, canUsers:false },
-  analyst_est: { label:'Analista estabilidades',   color:'#185FA5', canEdit:true,  canEditEst:true, canCreate:true,  canCreateEst:true, canApprove:false, canAdmin:false, canAudit:false, canUsers:false },
-  supervisor: { label:'Supervisor', color:'#854F0B', canEdit:true,  canEditEst:true, canCreate:true, canEditEst:true,  canApprove:true,  canAdmin:false, canAudit:true,  canUsers:false },
-  admin:      { label:'Admin',      color:'#3B6D11', canEdit:true,  canEditEst:true, canCreate:true,  canEditEst:true, canApprove:true,  canAdmin:true,  canAudit:true,  canUsers:true  },
+  viewer:     { label:'Viewer',     color:'#888780', canEdit:false, canCreate:false, canApprove:false, canAdmin:false, canAudit:false, canUsers:false },
+  analyst:    { label:'Analista',   color:'#185FA5', canEdit:true,  canCreate:true,  canApprove:false, canAdmin:false, canAudit:false, canUsers:false },
+  supervisor: { label:'Supervisor', color:'#854F0B', canEdit:true,  canCreate:true,  canApprove:true,  canAdmin:false, canAudit:true,  canUsers:false },
+  admin:      { label:'Admin',      color:'#3B6D11', canEdit:true,  canCreate:true,  canApprove:true,  canAdmin:true,  canAudit:true,  canUsers:true  },
 };
 
 const PERMISSIONS_MATRIX = [
-  {action:'Ver Dashboard, Resultados y Detalle de SCRUM',        viewer:true,  analyst:true,  analyst_est:true,  supervisor:true,  admin:true},
-  {action:'Editar campos en detalle de SCRUM',                   viewer:false, analyst:true,  analyst_est:true,  supervisor:true,  admin:true},
-  {action:'Crear nuevos estudios/lotes en SCRUM',                viewer:false, analyst:true,  analyst_est:true,  supervisor:true,  admin:true},
-  {action:'Ver Dashboard, Resultados y Detalle de ESTABILIDADES',viewer:true,  analyst:true,  analyst_est:true,  supervisor:true,  admin:true},
-  {action:'Editar campos en detalle de ESTABILIDADES',           viewer:false, analyst:false, analyst_est:true,  supervisor:true,  admin:true},
-  {action:'Crear nuevos estudios/lotes en ESTABILIDADES',        viewer:false, analyst:false, analyst_est:true,  supervisor:true,  admin:true},
-  {action:'Exportar CSV/Excel',                                  viewer:true,  analyst:true,  analyst_est:true,  supervisor:true,  admin:true},
-  {action:'Aprobar estudios',                                    viewer:false, analyst:false, analyst_est:false, supervisor:true,  admin:true},
-  {action:'Ver módulo de Actividad',                             viewer:false, analyst:false, analyst_est:false, supervisor:true,  admin:true},
-  {action:'Gestión de usuarios',                                 viewer:false, analyst:false, analyst_est:false, supervisor:false, admin:true},
+  {action:'Ver Dashboard y resultados',  viewer:true, analyst:true, supervisor:true, admin:true},
+  {action:'Ver detalle de registros',    viewer:true, analyst:true, supervisor:true, admin:true},
+  {action:'Exportar CSV / Excel',        viewer:true, analyst:true, supervisor:true, admin:true},
+  {action:'Editar campos en detalle',    viewer:false,analyst:true, supervisor:true, admin:true},
+  {action:'Crear nuevos estudios/lotes', viewer:false,analyst:true, supervisor:true, admin:true},
+  {action:'Aprobar estudios',            viewer:false,analyst:false,supervisor:true, admin:true},
+  {action:'Ver módulo de Actividad',     viewer:false,analyst:false,supervisor:true, admin:true},
+  {action:'Gestión de usuarios',         viewer:false,analyst:false,supervisor:false,admin:true},
 ];
 
 let USERS_LIST = [];
@@ -97,17 +94,17 @@ function renderModule() {
 
 /* ============ NAV ============ */
 const EST_PAGES = [
-  {id:'dashboard', label:'Dashboard', roles:['viewer','analyst','analyst_est','supervisor','admin']},
-  {id:'results',   label:'Resultados',roles:['viewer','analyst','analyst_est','supervisor','admin']},
-  {id:'full',      label:'Detalle',   roles:['viewer','analyst','analyst_est','supervisor','admin']},
-  {id:'form',      label:'Nuevo estudio', roles:['analyst_est','supervisor','admin']},
+  {id:'dashboard', label:'Dashboard', roles:['viewer','analyst','supervisor','admin']},
+  {id:'results',   label:'Resultados',roles:['viewer','analyst','supervisor','admin']},
+  {id:'full',      label:'Detalle',   roles:['viewer','analyst','supervisor','admin']},
+  {id:'form',      label:'Nuevo estudio', roles:['analyst','supervisor','admin']},
   {id:'audit',     label:'Actividad', roles:['supervisor','admin']},
 ];
 const SCRUM_PAGES = [
-  {id:'dashboard', label:'Dashboard', roles:['viewer','analyst','analyst_est','supervisor','admin']},
-  {id:'results',   label:'Resultados',roles:['viewer','analyst','analyst_est','supervisor','admin']},
-  {id:'full',      label:'Detalle',   roles:['viewer','analyst','analyst_est','supervisor','admin']},
-  {id:'form',      label:'Nuevo lote',roles:['analyst','analyst_est','supervisor','admin']},
+  {id:'dashboard', label:'Dashboard', roles:['viewer','analyst','supervisor','admin']},
+  {id:'results',   label:'Resultados',roles:['viewer','analyst','supervisor','admin']},
+  {id:'full',      label:'Detalle',   roles:['viewer','analyst','supervisor','admin']},
+  {id:'form',      label:'Nuevo lote',roles:['analyst','supervisor','admin']},
   {id:'audit',     label:'Actividad', roles:['supervisor','admin']},
 ];
 
@@ -459,7 +456,7 @@ function buildDetailPage(mod) {
     </div>
     <div class="detail-mode-toggle">
       <button class="mode-btn${detailEditMode?'':' active'}" id="btn-mode-read" onclick="setDetailMode(false)">Solo lectura</button>
-      <button class="mode-btn${detailEditMode?' active':''}" id="btn-mode-edit" onclick="setDetailMode(true)" ${!ROLES[currentUser.rol].canEditEst?'disabled':''}>Modo edición</button>
+      <button class="mode-btn${detailEditMode?' active':''}" id="btn-mode-edit" onclick="setDetailMode(true)" ${!ROLES[currentUser.rol].canEdit?'disabled':''}>Modo edición</button>
     </div>
   </div>
   <div id="detail-content">${mod==='est'?renderEstDetail():renderScrumDetail()}</div>`;
@@ -477,7 +474,7 @@ function bindDetailPage(mod) {
 }
 
 function setDetailMode(edit) {
-  if (edit && !ROLES[currentUser.rol].canEditEst) return;
+  if (edit && !ROLES[currentUser.rol].canEdit) return;
   detailEditMode = edit;
   document.getElementById('btn-mode-read')?.classList.toggle('active', !edit);
   document.getElementById('btn-mode-edit')?.classList.toggle('active', edit);
@@ -487,7 +484,7 @@ function setDetailMode(edit) {
 function renderEstDetail() {
   if (!currentEstDetailId) return '<div style="padding:40px;text-align:center;color:var(--text3)">Selecciona un estudio desde Resultados.</div>';
   const s = STUDIES.find(x=>x.id===currentEstDetailId); if(!s)return'';
-  const e = detailEditMode && ROLES[currentUser.rol].canEditEst;
+  const e = detailEditMode && ROLES[currentUser.rol].canEdit;
   const dl=daysLeft(s.limite), lS=dl<0?'color:var(--danger);font-weight:500':dl<=15?'color:var(--warning);font-weight:500':'';
   const fi=(label,key,type='text',opts=null)=>detailField(s,currentEstDetailId,label,key,type,opts,e,'est');
   const ESTADOS=['Pendiente','En proceso','Completo','Cancelado'],APROBS=['—','Aprobado','Rechazado','Pendiente'],SN=['—','Sí','No'];
@@ -1060,7 +1057,7 @@ function buildUsersPage() {
       <div class="field"><label>Usuario <span class="req-star">*</span></label><input id="uf-usuario" placeholder="jfernandez"></div>
       <div class="field"><label>Email <span class="req-star">*</span></label><input id="uf-email" type="email" placeholder="jfernandez@lab.com"></div>
       <div class="field"><label>Rol <span class="req-star">*</span></label>
-        <select id="uf-rol"><option value="">Seleccionar...</option><option value="viewer">Viewer — solo lectura</option><option value="analyst">Analista — carga y edición</option><option value="analyst_est">Analista estabilidades— carga y edición</option><option value="supervisor">Supervisor — aprobación</option><option value="admin">Admin — acceso total</option></select>
+        <select id="uf-rol"><option value="">Seleccionar...</option><option value="viewer">Viewer — solo lectura</option><option value="analyst">Analista — carga y edición</option><option value="supervisor">Supervisor — aprobación</option><option value="admin">Admin — acceso total</option></select>
       </div>
       <div class="field"><label>Planta habilitada</label><select id="uf-planta"><option value="todas">Todas las plantas</option><option value="Planta 1">Planta 1</option><option value="Planta 2">Planta 2</option></select></div>
       <div class="field"><label>Estado</label><select id="uf-estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
@@ -1091,7 +1088,7 @@ function bindUsersPage() {
 
 function renderUsersTable() {
   const tbody=document.getElementById('users-tbody');if(!tbody)return;
-  const RC={'viewer':'#888780','analyst':'#185FA5','analyst_est':'#185FA5','supervisor':'#854F0B','admin':'#3B6D11'};
+  const RC={'viewer':'#888780','analyst':'#185FA5','supervisor':'#854F0B','admin':'#3B6D11'};
   tbody.innerHTML=USERS_LIST.map(u=>{
     const r=ROLES[u.rol]||{},isMe=u.id===currentUser.id,col=RC[u.rol]||'#888';
     return`<tr style="${isMe?'background:var(--accent-light)':''}">
@@ -1110,7 +1107,7 @@ function renderUsersTable() {
 function renderPermMatrix() {
   const tbody=document.getElementById('perms-tbody');if(!tbody)return;
   const ck='<span style="color:var(--success);font-size:14px">✓</span>',cr='<span style="color:var(--text3)">—</span>';
-  tbody.innerHTML=PERMISSIONS_MATRIX.map((p,i)=>`<tr style="${i%2===0?'background:var(--surface2)':''}"><td style="padding:7px 12px;color:var(--text2)">${p.action}</td><td style="text-align:center;padding:7px 12px">${p.viewer?ck:cr}</td><td style="text-align:center;padding:7px 12px">${p.analyst?ck:cr}</td><td style="text-align:center;padding:7px 12px">${p.analyst_est?ck:cr}</td><td style="text-align:center;padding:7px 12px">${p.supervisor?ck:cr}</td><td style="text-align:center;padding:7px 12px">${p.admin?ck:cr}</td></tr>`).join('');
+  tbody.innerHTML=PERMISSIONS_MATRIX.map((p,i)=>`<tr style="${i%2===0?'background:var(--surface2)':''}"><td style="padding:7px 12px;color:var(--text2)">${p.action}</td><td style="text-align:center;padding:7px 12px">${p.viewer?ck:cr}</td><td style="text-align:center;padding:7px 12px">${p.analyst?ck:cr}</td><td style="text-align:center;padding:7px 12px">${p.supervisor?ck:cr}</td><td style="text-align:center;padding:7px 12px">${p.admin?ck:cr}</td></tr>`).join('');
 }
 
 function saveUser() {
