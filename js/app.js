@@ -1187,7 +1187,7 @@ async function saveField(mod, id, key, newVal) {
   // Guardar en audit log local y Supabase
   const entry = {
     who: currentUser.nombre,
-    what: Editó "${key}" en ${rec.prod||rec.desc||''} (${rec.lote}): "${oldVal||'—'}" → "${newVal||'—'}",
+    what: 'Editó' "${key}" en ${rec.prod||rec.desc||''} (${rec.lote}): "${oldVal||'—'}" → "${newVal||'—'}",
     when: nowStr(), field: key,
     old: String(oldVal||''), new: String(newVal||''),
     study: id, module: mod
