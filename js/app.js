@@ -459,7 +459,7 @@ function buildDetailPage(mod) {
     </div>
     <div class="detail-mode-toggle">
       <button class="mode-btn${detailEditMode?'':' active'}" id="btn-mode-read" onclick="setDetailMode(false)">Solo lectura</button>
-      <button class="mode-btn${detailEditMode?' active':''}" id="btn-mode-edit" onclick="setDetailMode(true)" ${!ROLES[currentUser.rol].canEdit?'disabled':''}>Modo edición</button>
+      <button class="mode-btn${detailEditMode?' active':''}" id="btn-mode-edit" onclick="setDetailMode(true)" ${!ROLES[currentUser.rol].canEditEst?'disabled':''}>Modo edición</button>
     </div>
   </div>
   <div id="detail-content">${mod==='est'?renderEstDetail():renderScrumDetail()}</div>`;
@@ -477,7 +477,7 @@ function bindDetailPage(mod) {
 }
 
 function setDetailMode(edit) {
-  if (edit && !ROLES[currentUser.rol].canEdit) return;
+  if (edit && !ROLES[currentUser.rol].canEditEst) return;
   detailEditMode = edit;
   document.getElementById('btn-mode-read')?.classList.toggle('active', !edit);
   document.getElementById('btn-mode-edit')?.classList.toggle('active', edit);
@@ -487,7 +487,7 @@ function setDetailMode(edit) {
 function renderEstDetail() {
   if (!currentEstDetailId) return '<div style="padding:40px;text-align:center;color:var(--text3)">Selecciona un estudio desde Resultados.</div>';
   const s = STUDIES.find(x=>x.id===currentEstDetailId); if(!s)return'';
-  const e = detailEditMode && ROLES[currentUser.rol].canEdit;
+  const e = detailEditMode && ROLES[currentUser.rol].canEditEst;
   const dl=daysLeft(s.limite), lS=dl<0?'color:var(--danger);font-weight:500':dl<=15?'color:var(--warning);font-weight:500':'';
   const fi=(label,key,type='text',opts=null)=>detailField(s,currentEstDetailId,label,key,type,opts,e,'est');
   const ESTADOS=['Pendiente','En proceso','Completo','Cancelado'],APROBS=['—','Aprobado','Rechazado','Pendiente'],SN=['—','Sí','No'];
