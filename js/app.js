@@ -1003,7 +1003,7 @@ async function submitScrumForm() {
   const entry = {who:currentUser.nombre,what:`SCRUM: Creó lote ${cod} (${desc}, ${lote}) · ${planta}`,when:nowStr(),field:'creación',old:'',new:cod,study:saved.id,module:'scrum'};
   AUDIT_LOG.unshift(entry);
   await dbInsertAudit(entry);
-  alert(Lote guardado: ${desc} — ${lote});
+  alert(`Lote guardado: ${desc} — ${lote}`);
   navigateTo('results');
 }
 
@@ -1161,7 +1161,7 @@ async function toggleUserStatus(id){
   u.estado=u.estado==='activo'?'inactivo':'activo';
   const {error} = await sb.from('users_list').update({estado:u.estado}).eq('id',id);
   if(error){console.error(error);u.estado=old;alert('Error al guardar.');return;}
-  const entry={who:currentUser.nombre,what:${u.estado==='activo'?'Activó':'Desactivó'} usuario ${u.usuario},when:nowStr(),field:'estado',old,new:u.estado,study:null,module:'sys'};
+  const entry={who:currentUser.nombre,what:`${u.estado==='activo'?'Activó':'Desactivó'} usuario ${u.usuario}`,when:nowStr(),field:'estado',old,new:u.estado,study:null,module:'sys'};
   AUDIT_LOG.unshift(entry);
   await dbInsertAudit(entry);
   renderUsersTable();
@@ -1267,7 +1267,16 @@ function xlsxDownload(headers, rows, sheetName, filename) {
   const H='1F5FA5';
   headers.forEach((_,i)=>{const ref=XLSX.utils.encode_cell({r:0,c:i});if(ws[ref])ws[ref].s={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:H}},alignment:{horizontal:'center'}};});
   rows.forEach((row,ri)=>{row.forEach((_,ci)=>{const ref=XLSX.utils.encode_cell({r:ri+1,c:ci});if(ws[ref])ws[ref].s={fill:{fgColor:{rgb:ri%2===0?'F5F4F0':'FFFFFF'}},font:{sz:10},border:{top:{style:'thin',color:{rgb:'E2E0D8'}},bottom:{style:'thin',color:{rgb:'E2E0D8'}},left:{style:'thin',color:{rgb:'E2E0D8'}},right:{style:'thin',color:{rgb:'E2E0D8'}}}};});});
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  const entry = {
+  who: currentUser.nombre,
+  what: (u.estado === 'activo' ? 'Activó' : 'Desactivó') + ' usuario ' + u.usuario,
+  when: nowStr(),
+  field: 'estado',
+  old: old,
+  new: u.estado,
+  study: null,
+  module: 'sys'
+};
   XLSX.writeFile(wb,filename+'.xlsx');
 }
 
