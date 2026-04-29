@@ -656,15 +656,19 @@ function validateEstDates() {
   return ok;
 }
 
-function submitEstForm() {
+async function submitEstForm() {
   const prod=v('fp-prod').trim(),planta=v('fp-planta'),lote=v('fp-lote').trim(),cod=v('fp-cod').trim();
   const cond=document.getElementById('cond-preview')?.textContent||'';
   if(!prod||!planta||!lote||!cod||cond==='—'){alert('Complete los campos obligatorios.');return;}
   if(!validateEstDates()){alert('Corrija errores de fechas.');return;}
   const ns={id:STUDIES.length+1,cod,prod,lote,planta,cond,ubic:v('fp-ubicfis')||'',div:v('fp-div')||'',tiempo:v('fp-tiempo')||'',ingreso:fmtDate(v('fp-ingreso')),teorica:fmtDate(v('fp-teorica')),limite:fmtDate(v('fp-limite')),estado:v('fp-estado')||'Pendiente',oos:v('fp-oos')==='Sí',oos_obs:v('fp-oos-obs')||'',cumpl:'',aprob:'Pendiente',analistFQ:v('fp-anfq')||'',analistMicro:v('fp-anmicro')||'',micro:v('fp-micro')||'No',contenido:v('fp-contenido')||'',deg1:v('fp-deg1')||'',deg2:v('fp-deg2')||'',deg3:v('fp-deg3')||'',disol:v('fp-disol')||'',obs:v('fp-obs')||'',elab:fmtDate(v('fp-elab')),camara:fmtDate(v('fp-camara')),fqi:fmtDate(v('fp-fqi')),fqf:fmtDate(v('fp-fqf')),fqv:fmtDate(v('fp-fqv')),msi:fmtDate(v('fp-msi'))||'N/A',msf:fmtDate(v('fp-msf'))||'N/A',motivo:v('fp-motivo')||'',empaque:v('fp-empaque')||'',condsal:'',semana:'',status:'Pendiente',limInf:v('fp-lim-inf')||'',limSup:v('fp-lim-sup')||'',corredor:v('fp-corredor')||'',cumplEst:'',salida:'',libteor:'',lib:''};
-  STUDIES.push(ns);
-  AUDIT_LOG.unshift({who:currentUser.nombre,what:`Creó estudio: ${prod} (${lote}) · ${planta}`,when:nowStr(),field:'creación',old:'',new:lote,study:ns.id,module:'est'});
-  alert(`Estudio guardado: ${prod} — ${lote}`);
+ const saved = await dbInsertStudy(ns);
+  if (!saved) { alert('Error al guardar en Supabase.'); return; }
+  STUDIES.push(saved);
+  const entry = {who:currentUser.nombre,what:Creó estudio: ${prod} (${lote}) · ${planta},when:nowStr(),field:'creación',old:'',new:lote,study:saved.id,module:'est'};
+  AUDIT_LOG.unshift(entry);
+  await dbInsertAudit(entry);
+  alert(Estudio guardado: ${prod} — ${lote});
   navigateTo('results');
 }
 
@@ -986,16 +990,20 @@ function bindScrumForm() {
   document.getElementById('sf-prior')?.addEventListener('change',function(){document.getElementById('sf-prior-fecha-wrap').style.display=this.value==='Sí'?'':'none';});
 }
 
-function submitScrumForm() {
+async function submitScrumForm() {
   const cod=v('sf-cod').trim(),planta=v('sf-planta'),desc=v('sf-desc').trim(),lote=v('sf-lote').trim(),div=v('sf-div');
   const ident=v('sf-ident'),limqc=v('sf-limqc');
   if(!cod||!planta||!desc||!lote||!div){alert('Complete los campos obligatorios.');return;}
   if(!ident){document.getElementById('err-sf-ident').classList.remove('hidden');return;}
   if(!limqc){document.getElementById('err-sf-limqc').classList.remove('hidden');return;}
   const nr={id:SCRUM_RECORDS.length+1,cod,planta,desc,lote,div,nInspeccion:v('sf-ninsp')||'',prioridad:v('sf-prior')||'No',fechaLimPrioridad:fmtDate(v('sf-prior-fecha')),identDeposito:fmtDate(ident),limiteQC:fmtDate(limqc),ingresoFQ:fmtDate(v('sf-ingfq')),spMicroConthLal:fmtDate(v('sf-spmicro'))||'N/A',spMicroEsterilidad:fmtDate(v('sf-spest'))||'N/A',controlHigienico:v('sf-ctrlhig')||'No',fechaFinEsterilidad:'',fechaFinMicro:'',analistFQ:v('sf-anfq')||'',fechaInicioAnalisis:fmtDate(v('sf-finicio')),fechaFinAnalisis:'',validacionFichaSAP:'',finalQCSAP:'',obs:v('sf-obs')||'',status:'En análisis',statusFinal:'Pendiente',liberadoATiempo:'Pendiente',granelCompControl:v('sf-tipo')||'Granel',granel:v('sf-tipo')||'Granel'};
-  SCRUM_RECORDS.push(nr);
-  AUDIT_LOG.unshift({who:currentUser.nombre,what:`SCRUM: Creó lote ${cod} (${desc}, ${lote}) · ${planta}`,when:nowStr(),field:'creación',old:'',new:cod,study:nr.id,module:'scrum'});
-  alert(`Lote guardado: ${desc} — ${lote}`);
+  const saved = await dbInsertScrum(nr);
+  if (!saved) { alert('Error al guardar en Supabase.'); return; }
+  SCRUM_RECORDS.push(saved);
+  const entry = {who:currentUser.nombre,what:SCRUM: Creó lote ${cod} (${desc}, ${lote}) · ${planta},when:nowStr(),field:'creación',old:'',new:cod,study:saved.id,module:'scrum'};
+  AUDIT_LOG.unshift(entry);
+  await dbInsertAudit(entry);
+  alert(Lote guardado: ${desc} — ${lote});
   navigateTo('results');
 }
 
@@ -1110,19 +1118,34 @@ function renderPermMatrix() {
   tbody.innerHTML=PERMISSIONS_MATRIX.map((p,i)=>`<tr style="${i%2===0?'background:var(--surface2)':''}"><td style="padding:7px 12px;color:var(--text2)">${p.action}</td><td style="text-align:center;padding:7px 12px">${p.viewer?ck:cr}</td><td style="text-align:center;padding:7px 12px">${p.analyst?ck:cr}</td><td style="text-align:center;padding:7px 12px">${p.supervisor?ck:cr}</td><td style="text-align:center;padding:7px 12px">${p.admin?ck:cr}</td></tr>`).join('');
 }
 
-function saveUser() {
+async function saveUser() {
   const nombre=v('uf-nombre').trim(),usuario=v('uf-usuario').trim(),email=v('uf-email').trim(),rol=v('uf-rol');
   if(!nombre||!usuario||!email||!rol){alert('Complete todos los campos obligatorios.');return;}
   if(editingUserId){
     const u=USERS_LIST.find(x=>x.id===editingUserId);
-    if(u){const oldRol=u.rol;Object.assign(u,{nombre,usuario,email,rol,planta:v('uf-planta')||'todas',estado:v('uf-estado')||'activo'});AUDIT_LOG.unshift({who:currentUser.nombre,what:`Editó usuario ${usuario}: rol "${oldRol}" → "${rol}"`,when:nowStr(),field:'usuario',old:oldRol,new:rol,study:null,module:'sys'});}
-  }else{
+    if(u){
+      const oldRol=u.rol;
+      Object.assign(u,{nombre,usuario,email,rol,planta:v('uf-planta')||'todas',estado:v('uf-estado')||'activo'});
+      const {error} = await sb.from('users_list').update({nombre,usuario,email,rol,planta:u.planta,estado:u.estado}).eq('id',editingUserId);
+      if(error){console.error(error);alert('Error al guardar en Supabase.');return;}
+      const entry={who:currentUser.nombre,what:Editó usuario ${usuario}: rol "${oldRol}" → "${rol}",when:nowStr(),field:'usuario',old:oldRol,new:rol,study:null,module:'sys'};
+      AUDIT_LOG.unshift(entry);
+      await dbInsertAudit(entry);
+    }
+  } else {
     const initials=nombre.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-    USERS_LIST.push({id:USERS_LIST.length+1,nombre,usuario,email,rol,planta:v('uf-planta')||'todas',estado:v('uf-estado')||'activo',lastLogin:'Nunca',initials});
-    AUDIT_LOG.unshift({who:currentUser.nombre,what:`Creó usuario ${usuario} con rol ${rol}`,when:nowStr(),field:'usuario',old:'',new:usuario,study:null,module:'sys'});
+    const newU={nombre,usuario,email,rol,planta:v('uf-planta')||'todas',estado:v('uf-estado')||'activo',last_login:'Nunca',initials};
+    const {data,error} = await sb.from('users_list').insert(newU).select().single();
+    if(error){console.error(error);alert('Error al guardar en Supabase.');return;}
+    USERS_LIST.push({...data, lastLogin: data.last_login});
+    const entry={who:currentUser.nombre,what:Creó usuario ${usuario} con rol ${rol},when:nowStr(),field:'usuario',old:'',new:usuario,study:null,module:'sys'};
+    AUDIT_LOG.unshift(entry);
+    await dbInsertAudit(entry);
   }
-  document.getElementById('user-form-card').style.display='none';editingUserId=null;
-  renderUsersTable();renderUserListDropdown();
+  document.getElementById('user-form-card').style.display='none';
+  editingUserId=null;
+  renderUsersTable();
+  renderUserListDropdown();
 }
 
 function editUser(id){
@@ -1131,12 +1154,18 @@ function editUser(id){
   document.getElementById('user-form-card').style.display='';
 }
 
-function toggleUserStatus(id){
+async function toggleUserStatus(id){
   const u=USERS_LIST.find(x=>x.id===id);if(!u)return;
   if(u.id===currentUser.id){alert('No podés desactivar tu propio usuario.');return;}
-  const old=u.estado;u.estado=u.estado==='activo'?'inactivo':'activo';
-  AUDIT_LOG.unshift({who:currentUser.nombre,what:`${u.estado==='activo'?'Activó':'Desactivó'} usuario ${u.usuario}`,when:nowStr(),field:'estado',old,new:u.estado,study:null,module:'sys'});
-  renderUsersTable();renderUserListDropdown();
+  const old=u.estado;
+  u.estado=u.estado==='activo'?'inactivo':'activo';
+  const {error} = await sb.from('users_list').update({estado:u.estado}).eq('id',id);
+  if(error){console.error(error);u.estado=old;alert('Error al guardar.');return;}
+  const entry={who:currentUser.nombre,what:${u.estado==='activo'?'Activó':'Desactivó'} usuario ${u.usuario},when:nowStr(),field:'estado',old,new:u.estado,study:null,module:'sys'};
+  AUDIT_LOG.unshift(entry);
+  await dbInsertAudit(entry);
+  renderUsersTable();
+  renderUserListDropdown();
 }
 
 /* ============================================================
