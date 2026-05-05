@@ -752,7 +752,14 @@ function refreshScrumDashboard() {
   const tTi=document.getElementById('scrum-trend-title');
   const locLabel=scrumDashLoc==='todas'?'Todos':scrumDashLoc, divLabel=scrumDashDiv==='todas'?'':` · ${scrumDashDiv}`;
   if(tTi)tTi.textContent=`Liberados a tiempo vs Overdue — ${locLabel}${divLabel}`;
-  const qData=[{q:'Q1 2025',ok:8,late:2},{q:'Q2 2025',ok:10,late:1},{q:'Q3 2025',ok:7,late:3},{q:'Q4 2025',ok:11,late:1},{q:'Q1 2026',ok:atime,late:overdue}];
+  const terminadosQ=(q,year)=>d.filter(r=>{const dt=parseDate(r.identDeposito);if(!dt)return false;const qm=Math.floor(dt.getMonth()/3);return dt.getFullYear()===year&&qm===(q-1)&&r.statusFinal==='Terminado';});
+const qData=[
+  {q:'Q1 2025',ok:terminadosQ(1,2025).filter(r=>r.liberadoATiempo==='Cumplió').length,late:terminadosQ(1,2025).filter(r=>r.liberadoATiempo==='Overdue').length},
+  {q:'Q2 2025',ok:terminadosQ(2,2025).filter(r=>r.liberadoATiempo==='Cumplió').length,late:terminadosQ(2,2025).filter(r=>r.liberadoATiempo==='Overdue').length},
+  {q:'Q3 2025',ok:terminadosQ(3,2025).filter(r=>r.liberadoATiempo==='Cumplió').length,late:terminadosQ(3,2025).filter(r=>r.liberadoATiempo==='Overdue').length},
+  {q:'Q4 2025',ok:terminadosQ(4,2025).filter(r=>r.liberadoATiempo==='Cumplió').length,late:terminadosQ(4,2025).filter(r=>r.liberadoATiempo==='Overdue').length},
+  {q:'Q1 2026',ok:atime,late:overdue}
+];
   if(tEl)tEl.innerHTML=qData.map(x=>{const tot=x.ok+x.late||1,pct=Math.round(x.ok/tot*100),col=pct>=80?'#639922':pct>=60?'#EF9F27':'#E24B4A';return`<div class="bar-row"><div class="bar-label">${x.q}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div><div class="bar-pct" style="color:${col}">${pct}%</div></div>`;}).join('');
   // Legend
   const lEl=document.getElementById('scrum-legend');
