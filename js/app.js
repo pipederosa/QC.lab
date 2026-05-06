@@ -3,7 +3,7 @@
    Módulos: Estabilidades · SCRUM · Usuarios (Admin)
    ============================================================ */
 
-/* ============ ROLES ============ */
+/* ============ ROLES ============ */ 
 const ROLES = {
   viewer:     { label:'Viewer',     color:'#888780', canEdit:false, canCreate:false, canApprove:false, canAdmin:false, canAudit:false, canUsers:false },
   analyst:    { label:'Analista',   color:'#185FA5', canEdit:true,  canCreate:true,  canApprove:false, canAdmin:false, canAudit:false, canUsers:false },
