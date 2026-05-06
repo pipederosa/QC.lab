@@ -266,7 +266,7 @@ function goEstResultsFiltered(filter) {
 
 function refreshEstDashboard() {
   const d = getEstDashStudies();
-  const pct = d.length ? Math.round(d.filter(s=>s.cumpl==='Sí').length/d.length*100) : 0;
+  const pct = d.length ? Math.round(d.filter(s=>s.cumpl==='Sí'||s.cumpl==='Si').length/d.length*100) : 0;
   setEl('k-curso', d.filter(s=>s.estado==='En proceso'||s.estado==='Pendiente').length);
   setEl('k-venc',  d.filter(isExpired).length);
   setEl('k-prox',  d.filter(s=>isExpiringSoon(s,30)).length);
@@ -763,10 +763,10 @@ const qData=[
   if(tEl)tEl.innerHTML=qData.map(x=>{const tot=x.ok+x.late||1,pct=Math.round(x.ok/tot*100),col=pct>=80?'#639922':pct>=60?'#EF9F27':'#E24B4A';return`<div class="bar-row"><div class="bar-label">${x.q}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div><div class="bar-pct" style="color:${col}">${pct}%</div></div>`;}).join('');
   // Legend
   const lEl=document.getElementById('scrum-legend');
-  if(lEl){const cs={Terminado:'#27500A',Pendiente:'#185FA5',Overdue:'#E24B4A'};const cnt={Terminado:d.filter(r=>r.statusFinal==='Terminado').length,Pendiente:d.filter(r=>r.statusFinal==='Pendiente').length,Overdue};lEl.innerHTML=Object.entries(cnt).map(([l,c])=>`<div class="legend-item"><div class="legend-dot" style="background:${cs[l]}"></div>${l}: <strong>${c}</strong></div>`).join('');}
+  if(lEl){const cs={Terminado:'#27500A',Pendiente:'#185FA5',Overdue:'#E24B4A'};const cnt={Terminado:d.filter(r=>r.statusFinal==='Terminado').length,Pendiente:d.filter(r=>r.statusFinal==='Pendiente').length,Overdue:overdue};lEl.innerHTML=Object.entries(cnt).map(([l,c])=>`<div class="legend-item"><div class="legend-dot" style="background:${cs[l]}"></div>${l}: <strong>${c}</strong></div>`).join('');}
   // Expiring
   const eb=document.getElementById('scrum-expiring-body');
-  if(eb){const exp=d.filter(r=>{const dl=daysLeft(r.limiteQC);return(dl!==null&&dl<=7&&r.statusFinal==='Pendiente')||r.liberadoATiempo==='Overdue';}).sort((a,b)=>(daysLeft(a.limiteQC)||9999)-(daysLeft(b.limiteQC)||9999)).slice(0,8);eb.innerHTML=exp.map(r=>{const dl=daysLeft(r.limiteQC),rowCls=dl<0?'row-danger':dl<=3?'row-warning':'';const dt=dl<0?`<span style="color:var(--danger);font-weight:500">Overdue</span>`:dl<=7?`<span style="color:var(--warning);font-weight:500">${dl}d</span>`:`${dl}d`;return`<tr class="${rowCls}"><td>${r.cod}</td><td>${r.desc}</td><td>${r.lote}</td><td>${r.limiteQC}</td><td>${dt}</td><td>${r.planta}</td><td>${scrumBadge(r.statusFinal)}</td></tr>`;}).join('');}
+  if(eb){const exp=d.filter(r=>{const dl=daysLeft(r.limiteQC);return(dl!==null&&dl<=7&&r.statusFinal==='Pendiente')||(r.liberadoATiempo==='Overdue'&&r.statusFinal!=='Terminado');}).sort((a,b)=>(daysLeft(a.limiteQC)||9999)-(daysLeft(b.limiteQC)||9999)).slice(0,8);eb.innerHTML=exp.map(r=>{const dl=daysLeft(r.limiteQC),rowCls=dl<0?'row-danger':dl<=3?'row-warning':'';const dt=dl<0?`<span style="color:var(--danger);font-weight:500">Overdue</span>`:dl<=7?`<span style="color:var(--warning);font-weight:500">${dl}d</span>`:`${dl}d`;return`<tr class="${rowCls}"><td>${r.cod}</td><td>${r.desc}</td><td>${r.lote}</td><td>${r.limiteQC}</td><td>${dt}</td><td>${r.planta}</td><td>${scrumBadge(r.statusFinal)}</td></tr>`;}).join('');}
 }
 
 /* ============================================================
