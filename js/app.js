@@ -221,7 +221,7 @@ function buildEstDashboard() {
     <div class="card"><div class="card-title" id="est-trend-title">Tendencia de cumplimiento — Todas las plantas</div><div class="bar-chart" id="est-trend-chart"></div></div>
     <div class="card"><div class="card-title">Estado de estudios</div>
       <div class="donut-wrap"><svg viewBox="0 0 110 110"><circle cx="55" cy="55" r="42" fill="none" stroke="var(--border)" stroke-width="14"/><circle id="donut-arc" cx="55" cy="55" r="42" fill="none" stroke="var(--accent)" stroke-width="14" stroke-dasharray="230 264" stroke-dashoffset="66" stroke-linecap="round" style="transition:stroke-dasharray .6s ease"/></svg>
-        <div class="donut-center"><div class="donut-pct" id="donut-num">—</div><div class="donut-lbl">cumpl.</div></div>
+        <div class="donut-center"><div class="donut-pct" id="donut-num">—</div><div class="donut-lbl">completados</div>
       </div>
       <div class="legend-items" id="est-legend"></div>
     </div>
@@ -266,16 +266,52 @@ function goEstResultsFiltered(filter) {
 
 function refreshEstDashboard() {
   const d = getEstDashStudies();
-  const pct = d.length ? Math.round(d.filter(s=>s.cumpl==='Sí'||s.cumpl==='Si').length/d.length*100) : 0;
+  const pct = d.length ? Math.round(d.filter(s=>s.estado==='Completo'&&(s.cumpl==='Sí'||s.cumpl==='Si')).length/d.length*100) : 0;
   setEl('k-curso', d.filter(s=>s.estado==='En proceso'||s.estado==='Pendiente').length);
   setEl('k-venc',  d.filter(isExpired).length);
   setEl('k-prox',  d.filter(s=>isExpiringSoon(s,30)).length);
   setEl('k-cump',  pct+'%');
   setEl('k-oos',   d.filter(s=>s.oos).length);
   setEl('k-aprob', d.filter(s=>s.aprob==='Pendiente').length);
-  const arc = document.getElementById('donut-arc');
-  if (arc){const c=2*Math.PI*42;arc.style.strokeDasharray=(pct/100*c).toFixed(1)+' '+c.toFixed(1);arc.style.stroke=pct>=85?'#639922':pct>=70?'#EF9F27':'#E24B4A';}
-  setEl('donut-num', pct+'%');
+  // Donut multisegmento
+const total = d.length || 1;
+const cCompleto = d.filter(s=>s.estado==='Completo').length;
+const cProceso = d.filter(s=>s.estado==='En proceso').length;
+const cPendiente = d.filter(s=>s.estado==='Pendiente').length;
+const cCancelado = d.filter(s=>s.estado==='Cancelado').length;
+const donutSvg = document.getElementById('donut-arc');
+if (donutSvg) {
+  const r=42, circ=2*Math.PI*r, cx=55, cy=55;
+  const segs=[
+    {val:cCompleto,  col:'#27500A'},
+    {val:cProceso,   col:'#EF9F27'},
+    {val:cPendiente, col:'#185FA5'},
+    {val:cCancelado, col:'#888780'},
+  ];
+  let offset=66; // empieza arriba
+  const svgEl = donutSvg.closest('svg');
+  // Limpiar segmentos anteriores
+  svgEl.querySelectorAll('.donut-seg').forEach(e=>e.remove());
+  segs.forEach(seg=>{
+    if(!seg.val) return;
+    const frac=seg.val/total;
+    const dash=(frac*circ).toFixed(1);
+    const gap=(circ-frac*circ).toFixed(1);
+    const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('class','donut-seg');
+    circle.setAttribute('cx',cx);circle.setAttribute('cy',cy);circle.setAttribute('r',r);
+    circle.setAttribute('fill','none');
+    circle.setAttribute('stroke',seg.col);
+    circle.setAttribute('stroke-width','14');
+    circle.setAttribute('stroke-dasharray',`${dash} ${gap}`);
+    circle.setAttribute('stroke-dashoffset',offset);
+    circle.setAttribute('stroke-linecap','butt');
+    svgEl.appendChild(circle);
+    offset-=frac*circ;
+  });
+  donutSvg.style.display='none'; // ocultar el arco original
+}
+setEl('donut-num', pct+'%');
   // Trend
   const tEl = document.getElementById('est-trend-chart');
   const tTi = document.getElementById('est-trend-title');
