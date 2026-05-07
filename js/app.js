@@ -217,13 +217,22 @@ function buildEstDashboard() {
     <div class="kpi kpi-danger" id="ek-oos" style="cursor:pointer"><div class="kpi-label">OOS activos</div><div class="kpi-val" id="k-oos">—</div><div class="kpi-sub">en investigación</div></div>
     <div class="kpi kpi-warning" id="ek-aprob" style="cursor:pointer"><div class="kpi-label">Aprob. pendientes</div><div class="kpi-val" id="k-aprob">—</div><div class="kpi-sub">esperando firma</div></div>
   </div>
-  <div class="chart-row">
+<div class="chart-row">
     <div class="card"><div class="card-title" id="est-trend-title">Tendencia de cumplimiento — Todas las plantas</div><div class="bar-chart" id="est-trend-chart"></div></div>
     <div class="card"><div class="card-title">Estado de estudios</div>
-      <div class="donut-wrap"><svg viewBox="0 0 110 110"><circle cx="55" cy="55" r="42" fill="none" stroke="var(--border)" stroke-width="14"/><circle id="donut-arc" cx="55" cy="55" r="42" fill="none" stroke="var(--accent)" stroke-width="14" stroke-dasharray="230 264" stroke-dashoffset="66" stroke-linecap="round" style="transition:stroke-dasharray .6s ease"/></svg>
-        <div class="donut-center"><div class="donut-pct" id="donut-num">—</div><div class="donut-lbl">completados</div>
+      <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
+        <div class="legend-items" id="est-legend" style="flex:1;min-width:0"></div>
+        <div style="position:relative;flex-shrink:0">
+          <svg viewBox="0 0 140 140" width="140" height="140" id="est-donut-svg">
+            <circle cx="70" cy="70" r="52" fill="none" stroke="var(--border)" stroke-width="16"/>
+            <circle id="donut-arc" cx="70" cy="70" r="52" fill="none" stroke="var(--accent)" stroke-width="16" stroke-dasharray="0 327" stroke-dashoffset="82" stroke-linecap="butt" style="display:none"/>
+          </svg>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
+            <div class="donut-pct" id="donut-num" style="font-size:15px;font-weight:600">—</div>
+            <div class="donut-lbl" style="font-size:9px">completados</div>
+          </div>
+        </div>
       </div>
-      <div class="legend-items" id="est-legend"></div>
     </div>
   </div>
   <div class="card"><div class="card-title">Estudios próximos a vencer (30 días)</div>
@@ -279,37 +288,52 @@ const cCompleto = d.filter(s=>s.estado==='Completo').length;
 const cProceso = d.filter(s=>s.estado==='En proceso').length;
 const cPendiente = d.filter(s=>s.estado==='Pendiente').length;
 const cCancelado = d.filter(s=>s.estado==='Cancelado').length;
-const donutSvg = document.getElementById('donut-arc');
-if (donutSvg) {
-  const r=42, circ=2*Math.PI*r, cx=55, cy=55;
+const svgEl = document.getElementById('est-donut-svg');
+if(svgEl) {
+  svgEl.querySelectorAll('.donut-seg,.donut-lbl-txt').forEach(e=>e.remove());
+  const r=52,circ=2*Math.PI*r,cx=70,cy=70,sw=16;
   const segs=[
-    {val:cCompleto,  col:'#27500A'},
-    {val:cProceso,   col:'#EF9F27'},
-    {val:cPendiente, col:'#185FA5'},
-    {val:cCancelado, col:'#888780'},
+    {val:cCompleto,  col:'#27500A', label:'Completos'},
+    {val:cProceso,   col:'#EF9F27', label:'En proceso'},
+    {val:cPendiente, col:'#185FA5', label:'Pendientes'},
+    {val:cCancelado, col:'#888780', label:'Cancelados'},
   ];
-  let offset=66; // empieza arriba
-  const svgEl = donutSvg.closest('svg');
-  // Limpiar segmentos anteriores
-  svgEl.querySelectorAll('.donut-seg').forEach(e=>e.remove());
+  let offsetAngle = -Math.PI/2;
   segs.forEach(seg=>{
     if(!seg.val) return;
     const frac=seg.val/total;
     const dash=(frac*circ).toFixed(1);
-    const gap=(circ-frac*circ).toFixed(1);
+    const gap=(circ*(1-frac)).toFixed(1);
+    const dashOffset = -(offsetAngle/(2*Math.PI))*circ - r*Math.PI/2;
     const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
     circle.setAttribute('class','donut-seg');
     circle.setAttribute('cx',cx);circle.setAttribute('cy',cy);circle.setAttribute('r',r);
     circle.setAttribute('fill','none');
     circle.setAttribute('stroke',seg.col);
-    circle.setAttribute('stroke-width','14');
+    circle.setAttribute('stroke-width',sw);
     circle.setAttribute('stroke-dasharray',`${dash} ${gap}`);
-    circle.setAttribute('stroke-dashoffset',offset);
+    circle.setAttribute('stroke-dashoffset', -(offsetAngle/(2*Math.PI)*circ) + circ/4 );
     circle.setAttribute('stroke-linecap','butt');
     svgEl.appendChild(circle);
-    offset-=frac*circ;
+    // Label afuera
+    if(frac>0.05) {
+      const midAngle = offsetAngle + frac*Math.PI;
+      const labelR = r + sw/2 + 12;
+      const lx = (cx + labelR*Math.cos(midAngle)).toFixed(1);
+      const ly = (cy + labelR*Math.sin(midAngle)).toFixed(1);
+      const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+      txt.setAttribute('class','donut-lbl-txt');
+      txt.setAttribute('x',lx);txt.setAttribute('y',ly);
+      txt.setAttribute('text-anchor','middle');
+      txt.setAttribute('dominant-baseline','middle');
+      txt.setAttribute('font-size','9');
+      txt.setAttribute('fill',seg.col);
+      txt.setAttribute('font-weight','600');
+      txt.textContent=`${Math.round(frac*100)}%`;
+      svgEl.appendChild(txt);
+    }
+    offsetAngle += frac*2*Math.PI;
   });
-  donutSvg.style.display='none'; // ocultar el arco original
 }
 setEl('donut-num', pct+'%');
   // Trend
@@ -738,7 +762,18 @@ function buildScrumDashboard() {
   <div class="chart-row">
     <div class="card"><div class="card-title" id="scrum-trend-title">Liberados a tiempo vs Overdue — Todos</div><div class="bar-chart" id="scrum-trend-chart"></div></div>
     <div class="card"><div class="card-title">Estado de lotes</div>
-      <div id="scrum-legend" style="display:flex;flex-direction:column;gap:6px;margin-top:8px"></div>
+      <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
+        <div id="scrum-legend" style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0"></div>
+        <div style="position:relative;flex-shrink:0">
+          <svg viewBox="0 0 140 140" width="140" height="140" id="scrum-donut-svg">
+            <circle cx="70" cy="70" r="52" fill="none" stroke="var(--border)" stroke-width="16"/>
+          </svg>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
+            <div id="scrum-donut-num" style="font-size:15px;font-weight:600;color:var(--text1)">—</div>
+            <div style="font-size:9px;color:var(--text3)">a tiempo</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="card"><div class="card-title">Lotes próximos a vencer / overdue</div>
@@ -799,8 +834,58 @@ const qData=[
   if(tEl)tEl.innerHTML=qData.map(x=>{const tot=x.ok+x.late||1,pct=Math.round(x.ok/tot*100),col=pct>=80?'#639922':pct>=60?'#EF9F27':'#E24B4A';return`<div class="bar-row"><div class="bar-label">${x.q}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div><div class="bar-pct" style="color:${col}">${pct}%</div></div>`;}).join('');
   // Legend
   const lEl=document.getElementById('scrum-legend');
-  if(lEl){const cs={Terminado:'#27500A',Pendiente:'#185FA5',Overdue:'#E24B4A'};const cnt={Terminado:d.filter(r=>r.statusFinal==='Terminado').length,Pendiente:d.filter(r=>r.statusFinal==='Pendiente').length,Overdue:overdue};lEl.innerHTML=Object.entries(cnt).map(([l,c])=>`<div class="legend-item"><div class="legend-dot" style="background:${cs[l]}"></div>${l}: <strong>${c}</strong></div>`).join('');}
-  // Expiring
+const scrumSvg=document.getElementById('scrum-donut-svg');
+const cTerminado=d.filter(r=>r.statusFinal==='Terminado').length;
+const cPendienteS=d.filter(r=>r.statusFinal==='Pendiente'&&r.liberadoATiempo!=='Overdue').length;
+const cOverdue=d.filter(r=>r.liberadoATiempo==='Overdue').length;
+const totalS=d.length||1;
+if(lEl){
+  const cs={Terminado:'#27500A','Pendiente (sin vencer)':'#185FA5','Overdue':'#E24B4A'};
+  const cnt={Terminado:cTerminado,'Pendiente (sin vencer)':cPendienteS,'Overdue':cOverdue};
+  lEl.innerHTML=Object.entries(cnt).map(([l,c])=>`<div class="legend-item"><div class="legend-dot" style="background:${cs[l]}"></div>${l}: <strong>${c}</strong></div>`).join('');
+}
+if(scrumSvg){
+  scrumSvg.querySelectorAll('.donut-seg,.donut-lbl-txt').forEach(e=>e.remove());
+  const r=52,circ=2*Math.PI*r,cx=70,cy=70,sw=16;
+  const segs=[
+    {val:cTerminado, col:'#27500A'},
+    {val:cPendienteS,col:'#185FA5'},
+    {val:cOverdue,   col:'#E24B4A'},
+  ];
+  let offsetAngle=-Math.PI/2;
+  segs.forEach(seg=>{
+    if(!seg.val)return;
+    const frac=seg.val/totalS;
+    const dash=(frac*circ).toFixed(1);
+    const gap=(circ*(1-frac)).toFixed(1);
+    const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('class','donut-seg');
+    circle.setAttribute('cx',cx);circle.setAttribute('cy',cy);circle.setAttribute('r',r);
+    circle.setAttribute('fill','none');circle.setAttribute('stroke',seg.col);
+    circle.setAttribute('stroke-width',sw);
+    circle.setAttribute('stroke-dasharray',`${dash} ${gap}`);
+    circle.setAttribute('stroke-dashoffset',-(offsetAngle/(2*Math.PI)*circ)+circ/4);
+    circle.setAttribute('stroke-linecap','butt');
+    scrumSvg.appendChild(circle);
+    if(frac>0.05){
+      const midAngle=offsetAngle+frac*Math.PI;
+      const labelR=r+sw/2+12;
+      const lx=(cx+labelR*Math.cos(midAngle)).toFixed(1);
+      const ly=(cy+labelR*Math.sin(midAngle)).toFixed(1);
+      const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+      txt.setAttribute('class','donut-lbl-txt');
+      txt.setAttribute('x',lx);txt.setAttribute('y',ly);
+      txt.setAttribute('text-anchor','middle');txt.setAttribute('dominant-baseline','middle');
+      txt.setAttribute('font-size','9');txt.setAttribute('fill',seg.col);txt.setAttribute('font-weight','600');
+      txt.textContent=`${Math.round(frac*100)}%`;
+      scrumSvg.appendChild(txt);
+    }
+    offsetAngle+=frac*2*Math.PI;
+  });
+  const atPct=cTerminado?Math.round(atime/cTerminado*100):0;
+  setEl('scrum-donut-num',atPct+'%');
+}
+   // Expiring
   const eb=document.getElementById('scrum-expiring-body');
   if(eb){const exp=d.filter(r=>{const dl=daysLeft(r.limiteQC);return(dl!==null&&dl<=7&&r.statusFinal==='Pendiente')||(r.liberadoATiempo==='Overdue'&&r.statusFinal!=='Terminado');}).sort((a,b)=>(daysLeft(a.limiteQC)||9999)-(daysLeft(b.limiteQC)||9999)).slice(0,8);eb.innerHTML=exp.map(r=>{const dl=daysLeft(r.limiteQC),rowCls=dl<0?'row-danger':dl<=3?'row-warning':'';const dt=dl<0?`<span style="color:var(--danger);font-weight:500">Overdue</span>`:dl<=7?`<span style="color:var(--warning);font-weight:500">${dl}d</span>`:`${dl}d`;return`<tr class="${rowCls}"><td>${r.cod}</td><td>${r.desc}</td><td>${r.lote}</td><td>${r.limiteQC}</td><td>${dt}</td><td>${r.planta}</td><td>${scrumBadge(r.statusFinal)}</td></tr>`;}).join('');}
 }
