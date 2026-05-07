@@ -534,6 +534,13 @@ function setDetailMode(edit) {
   document.getElementById('detail-content').innerHTML = currentModule==='est' ? renderEstDetail() : renderScrumDetail();
 }
 
+function confirmSaved() {
+  const btn = event.target;
+  btn.textContent = '✓ Cambios guardados';
+  btn.style.background = 'var(--success)';
+  setTimeout(()=>{btn.textContent='✓ Guardado';btn.style.background='';}, 2000);
+}
+
 function renderEstDetail() {
   if (!currentEstDetailId) return '<div style="padding:40px;text-align:center;color:var(--text3)">Selecciona un estudio desde Resultados.</div>';
   const s = STUDIES.find(x=>x.id===currentEstDetailId); if(!s)return'';
@@ -546,6 +553,7 @@ function renderEstDetail() {
     <span class="detail-title">${s.prod} — Lote ${s.lote}</span>
     ${estBadge(s.estado)} ${s.oos?'<span class="badge badge-oos">OOS</span>':''}
     <span style="margin-left:auto;font-size:11px;color:var(--text3);font-family:var(--font-mono)">${s.cod}·${s.div}</span>
+    ${e?`<button class="btn btn-primary btn-sm" onclick="confirmSaved()">✓ Guardado</button>`:''}
   </div>
   ${e?'<div class="detail-edit-notice">Modo edición activo — los cambios se guardan al salir del campo y se registran en Actividad.</div>':''}
   <div class="detail-grid">
@@ -1037,6 +1045,7 @@ function renderScrumDetail() {
     <span class="detail-title">${r.desc} — Lote ${r.lote}</span>
     ${scrumBadge(r.statusFinal)} ${liberadoBadge(r.liberadoATiempo)}
     <span style="margin-left:auto;font-size:11px;color:var(--text3);font-family:var(--font-mono)">${r.cod}·${r.div}</span>
+    ${e?`<button class="btn btn-primary btn-sm" onclick="confirmSaved()">✓ Guardado</button>`:''}
   </div>
   ${e?'<div class="detail-edit-notice">Modo edición activo — los cambios se registran en Actividad.</div>':''}
   <div class="detail-grid">
