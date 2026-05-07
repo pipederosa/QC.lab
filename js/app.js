@@ -40,6 +40,7 @@ let scrumDashLoc = 'todas', scrumDashDiv = 'todas';
 let scrumDetailEditMode = false;
 
 let editingUserId = null;
+let pendingChanges = {};
 
 /* ============ INIT ============ */
 document.addEventListener('DOMContentLoaded', async () => {
@@ -494,6 +495,7 @@ function exportEstXLSX() {
 let currentEstDetailId = null;
 
 function showEstDetail(id) {
+  pendingChanges = {};
   currentEstDetailId = id;
   detailEditMode = false;
   currentPage = 'full';
@@ -528,6 +530,7 @@ function bindDetailPage(mod) {
 
 function setDetailMode(edit) {
   if (edit && !ROLES[currentUser.rol].canEdit) return;
+  pendingChanges = {};
   detailEditMode = edit;
   document.getElementById('btn-mode-read')?.classList.toggle('active', !edit);
   document.getElementById('btn-mode-edit')?.classList.toggle('active', edit);
@@ -553,9 +556,9 @@ function renderEstDetail() {
     <span class="detail-title">${s.prod} — Lote ${s.lote}</span>
     ${estBadge(s.estado)} ${s.oos?'<span class="badge badge-oos">OOS</span>':''}
     <span style="margin-left:auto;font-size:11px;color:var(--text3);font-family:var(--font-mono)">${s.cod}·${s.div}</span>
-    ${e?`<button class="btn btn-primary btn-sm" onclick="confirmSaved()">✓ Guardado</button>`:''}
+    ${e?`<button class="btn btn-primary btn-sm" id="btn-save-detail" onclick="commitSaveDetail()">Guardar cambios</button>`:''}
   </div>
-  ${e?'<div class="detail-edit-notice">Modo edición activo — los cambios se guardan al salir del campo y se registran en Actividad.</div>':''}
+  ${e?'<div class="detail-edit-notice">Modo edición activo — los cambios se guardan al confirmar y se registran en Actividad.</div>':''}
   <div class="detail-grid">
     <div class="card"><div class="card-title">Identificación</div><table class="detail-table"><tbody>
       ${fi('Código','cod')}${fi('Producto','prod')}${fi('Lote','lote')}${fi('División','div','select',['CH','PH'])}${fi('Empaque','empaque')}${fi('Planta','planta','select',['Planta 1','Planta 2'])}${fi('Ubicación física','ubic','select',UBICACIONES[s.planta]||[])}${fi('Motivo','motivo')}
@@ -1030,6 +1033,7 @@ function exportScrumXLSX(){
 let currentScrumDetailId = null;
 
 function showScrumDetail(id) {
+  pendingChanges = {};
   currentScrumDetailId=id; detailEditMode=false;
   currentPage='full'; renderNav(); renderContent();
 }
@@ -1045,9 +1049,9 @@ function renderScrumDetail() {
     <span class="detail-title">${r.desc} — Lote ${r.lote}</span>
     ${scrumBadge(r.statusFinal)} ${liberadoBadge(r.liberadoATiempo)}
     <span style="margin-left:auto;font-size:11px;color:var(--text3);font-family:var(--font-mono)">${r.cod}·${r.div}</span>
-    ${e?`<button class="btn btn-primary btn-sm" onclick="confirmSaved()">✓ Guardado</button>`:''}
+    ${e?`<button class="btn btn-primary btn-sm" id="btn-save-detail" onclick="commitSaveDetail()">Guardar cambios</button>`:''}
   </div>
-  ${e?'<div class="detail-edit-notice">Modo edición activo — los cambios se registran en Actividad.</div>':''}
+  ${e?'<div class="detail-edit-notice">Modo edición activo — los cambios guardan al confirmar y se registran en Actividad.</div>':''}
   <div class="detail-grid">
     <div class="card"><div class="card-title">Identificación</div><table class="detail-table"><tbody>
       ${fi('Código','cod')}${fi('Planta','planta','select',['Planta 1','Planta 2'])}${fi('Descripción','desc')}${fi('Lote','lote')}${fi('División','div','select',['PH','CH','INY'])}${fi('Tipo','granelCompControl','select',['Granel','Completo','Control Final'])}${fi('N° Inspección','nInspeccion')}${fi('Prioridad','prioridad','select',SN)}${fi('F. límite prioridad','fechaLimPrioridad','date')}
@@ -1300,29 +1304,38 @@ async function toggleUserStatus(id){
 /* ============================================================
    SHARED: saveField (edición inline en detalle)
    ============================================================ */
-async function saveField(mod, id, key, newVal) {
+function saveField(mod, id, key, newVal) {
   const src = mod==='est' ? STUDIES : SCRUM_RECORDS;
   const rec = src.find(x=>x.id===id); if(!rec) return;
   const oldVal = rec[key]; if(String(oldVal)===String(newVal)) return;
+  // Guardar solo localmente hasta que se apriete el botón
+  if(!pendingChanges[id]) pendingChanges[id] = {mod, rec, changes:{}};
+  pendingChanges[id].changes[key] = {oldVal, newVal};
   rec[key] = newVal;
+  // Marcar botón como pendiente
+  const btn = document.getElementById('btn-save-detail');
+  if(btn) { btn.textContent = '● Guardar cambios'; btn.style.background = 'var(--warning)'; btn.style.borderColor = 'var(--warning)'; }
+}
 
-  // Guardar en Supabase
-  if (mod==='est') {
-    await dbUpdateStudy(id, rec);
-  } else {
-    await dbUpdateScrum(id, rec);
+async function commitSaveDetail() {
+  const btn = document.getElementById('btn-save-detail');
+  if(!Object.keys(pendingChanges).length) { 
+    if(btn){btn.textContent='✓ Sin cambios';setTimeout(()=>{btn.textContent='Guardar cambios';btn.style.background='';btn.style.borderColor='';},1500);} 
+    return; 
   }
-
-  // Guardar en audit log local y Supabase
-  const entry = {
-    who: currentUser.nombre,
-    what: `Editó "${key}" en ${rec.prod||rec.desc||''} (${rec.lote}): "${oldVal||'—'}" → "${newVal||'—'}"`,
-    when: nowStr(), field: key,
-    old: String(oldVal||''), new: String(newVal||''),
-    study: id, module: mod
-  };
-  AUDIT_LOG.unshift(entry);
-  await dbInsertAudit(entry);
+  if(btn){btn.textContent='Guardando...';btn.disabled=true;}
+  for(const id of Object.keys(pendingChanges)) {
+    const {mod, rec, changes} = pendingChanges[id];
+    if(mod==='est') await dbUpdateStudy(Number(id), rec);
+    else await dbUpdateScrum(Number(id), rec);
+    for(const [key, {oldVal, newVal}] of Object.entries(changes)) {
+      const entry={who:currentUser.nombre,what:`Editó "${key}" en ${rec.prod||rec.desc||''} (${rec.lote}): "${oldVal||'—'}" → "${newVal||'—'}"`,when:nowStr(),field:key,old:String(oldVal||''),new:String(newVal||''),study:Number(id),module:mod};
+      AUDIT_LOG.unshift(entry);
+      await dbInsertAudit(entry);
+    }
+  }
+  pendingChanges = {};
+  if(btn){btn.textContent='✓ Guardado';btn.style.background='var(--success)';btn.style.borderColor='var(--success)';btn.disabled=false;setTimeout(()=>{btn.textContent='Guardar cambios';btn.style.background='';btn.style.borderColor='';},2000);}
 }
 
 /* ============================================================
