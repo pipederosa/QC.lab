@@ -573,7 +573,7 @@ function renderEstDetail() {
       ${s.estado==='Cancelado'?fi('Motivo cancelación','motivo','textarea'):''}
     </tbody></table></div>
     <div class="card"><div class="card-title">Análisis FQ / Micro</div><table class="detail-table"><tbody>
-      ${fi('Analista FQ','analistFQ','select',USERS_LIST.filter(u=>['analyst','supervisor','admin'].includes(u.rol)&&u.estado==='activo').map(u=>u.nombre))}${fi('F. análisis FQ inicio','fqi','date')}${fi('F. análisis FQ fin','fqf','date')}${fi('F. validación FQ','fqv','date')}${fi('Lleva micro','micro','select',['Sí','No'])}${fi('Analista micro','analistMicro','select',USERS_LIST.filter(u=>['analyst','supervisor','admin'].includes(u.rol)&&u.estado==='activo').map(u=>u.nombre))}${fi('F. muestreo micro ini','msi','date')}${fi('F. muestreo micro fin','msf','date')}
+      ${fi('Analista FQ','analistFQ','select',USERS_LIST.filter(u=>['analyst','supervisor'].includes(u.rol)&&u.estado==='activo').map(u=>u.nombre))}${fi('F. análisis FQ inicio','fqi','date')}${fi('F. análisis FQ fin','fqf','date')}${fi('F. validación FQ','fqv','date')}${fi('Lleva micro','micro','select',['Sí','No'])}${fi('Analista micro','analistMicro','select',USERS_LIST.filter(u=>['analyst','supervisor','admin'].includes(u.rol)&&u.estado==='activo').map(u=>u.nombre))}${fi('F. muestreo micro ini','msi','date')}${fi('F. muestreo micro fin','msf','date')}
     </tbody></table></div>
     <div class="card"><div class="card-title">Resultados</div><table class="detail-table"><tbody>
       ${fi('Contenido','contenido')}${fi('Degradación 1','deg1')}${fi('Degradación 2','deg2')}${fi('Degradación 3','deg3')}${fi('Disolución','disol')}
@@ -646,12 +646,12 @@ function buildEstForm() {
       </div>
       <div class="form-section-head">Análisis</div>
       <div class="form-grid">
-        <div class="field"><label>Analista FQ</label><select id="fp-anfq"><option value="">Seleccionar...</option>${USERS_LIST.filter(u=>['analyst','supervisor','admin'].includes(u.rol)&&u.estado==='activo').map(u=>`<option>${u.nombre}</option>`).join('')}</select></div>
+        <div class="field"><label>Analista FQ</label><select id="fp-anfq"><option value="">Seleccionar...</option>${USERS_LIST.filter(u=>['analyst','supervisor'].includes(u.rol)&&u.estado==='activo').map(u=>`<option>${u.nombre}</option>`).join('')}</select></div>
         <div class="field"><label>F. inicio análisis FQ</label><input type="date" id="fp-fqi"></div>
         <div class="field"><label>F. fin análisis FQ</label><input type="date" id="fp-fqf"></div>
         <div class="field"><label>F. validación FQ</label><input type="date" id="fp-fqv"></div>
         <div class="field"><label>¿Lleva micro?</label><select id="fp-micro"><option>No</option><option>Sí</option></select></div>
-        <div class="field"><label>Analista micro</label><select id="fp-anmicro"><option value="">Seleccionar...</option>${USERS_LIST.filter(u=>['analyst','supervisor','admin'].includes(u.rol)&&u.estado==='activo').map(u=>`<option>${u.nombre}</option>`).join('')}</select></div>
+        <div class="field"><label>Analista micro</label><select id="fp-anmicro"><option value="">Seleccionar...</option>${USERS_LIST.filter(u=>['analyst','supervisor'].includes(u.rol)&&u.estado==='activo').map(u=>`<option>${u.nombre}</option>`).join('')}</select></div>
         <div class="field" id="micro-ini" style="display:none"><label>F. muestreo micro ini</label><input type="date" id="fp-msi"></div>
         <div class="field" id="micro-fin" style="display:none"><label>F. muestreo micro fin</label><input type="date" id="fp-msf"></div>
       </div>
@@ -1060,7 +1060,7 @@ function renderScrumDetail() {
       ${fi('Ident. por depósito','identDeposito','date')}${fi('Límite QC time','limiteQC','date')}${fi('Ingreso FQ','ingresoFQ','date')}${fi('SP Micro CONTH/LAL','spMicroConthLal','date')}${fi('SP Micro esterilidad','spMicroEsterilidad','date')}${fi('Control higiénico','controlHigienico','select',SN)}${fi('F. fin esterilidad','fechaFinEsterilidad','date')}${fi('F. fin micro','fechaFinMicro','date')}
     </tbody></table></div>
     <div class="card"><div class="card-title">Análisis FQ</div><table class="detail-table"><tbody>
-      ${fi('Analista FQ','analistFQ','select',USERS_LIST.filter(u=>['analyst','supervisor','admin'].includes(u.rol)&&u.estado==='activo').map(u=>u.nombre))}${fi('F. inicio análisis','fechaInicioAnalisis','date')}${fi('F. fin análisis','fechaFinAnalisis','date')}${fi('Validación ficha SAP','validacionFichaSAP','date')}${fi('Final QC - Aprobación SAP','finalQCSAP','date')}
+      ${fi('Analista FQ','analistFQ','select',USERS_LIST.filter(u=>['analyst','supervisor'].includes(u.rol)&&u.estado==='activo').map(u=>u.nombre))}${fi('F. inicio análisis','fechaInicioAnalisis','date')}${fi('F. fin análisis','fechaFinAnalisis','date')}${fi('Validación ficha SAP','validacionFichaSAP','date')}${fi('Final QC - Aprobación SAP','finalQCSAP','date')}
     </tbody></table></div>
     <div class="card"><div class="card-title">Resultado final</div><table class="detail-table"><tbody>
       ${fi('Status','status')}${fi('Status final','statusFinal','select',SF)}${fi('¿Liberado a tiempo?','liberadoATiempo','select',LIB)}${fi('Observaciones','obs','textarea')}
@@ -1104,7 +1104,7 @@ function buildScrumForm() {
       </div>
       <div class="form-section-head">Análisis</div>
       <div class="form-grid">
-        <div class="field"><label>Analista FQ</label><select id="sf-anfq"><option value="">Seleccionar...</option>${USERS_LIST.filter(u=>['analyst','supervisor','admin'].includes(u.rol)&&u.estado==='activo').map(u=>`<option>${u.nombre}</option>`).join('')}</select></div>
+        <div class="field"><label>Analista FQ</label><select id="sf-anfq"><option value="">Seleccionar...</option>${USERS_LIST.filter(u=>['analyst','supervisor'].includes(u.rol)&&u.estado==='activo').map(u=>`<option>${u.nombre}</option>`).join('')}</select></div>
         <div class="field"><label>F. inicio análisis</label><input type="date" id="sf-finicio"></div>
         <div class="field full-col"><label>Observaciones</label><textarea id="sf-obs"></textarea></div>
       </div>
