@@ -861,7 +861,7 @@ if(scrumSvg){
     circle.setAttribute('stroke-dasharray',`${dash} ${gap}`);
     circle.setAttribute('stroke-dashoffset', (circ/4 - consumed).toFixed(1));
     circle.setAttribute('stroke-linecap','butt');
-    svgEl.appendChild(circle);
+    scrumSvg.appendChild(circle);
     if(frac>0.05){
       const midFrac = consumed + (frac*circ)/2;
       const midAngle = (midFrac/circ)*2*Math.PI - Math.PI/2;
