@@ -1308,13 +1308,24 @@ function saveField(mod, id, key, newVal) {
   const src = mod==='est' ? STUDIES : SCRUM_RECORDS;
   const rec = src.find(x=>x.id===id); if(!rec) return;
   const oldVal = rec[key]; if(String(oldVal)===String(newVal)) return;
-  // Guardar solo localmente hasta que se apriete el botón
   if(!pendingChanges[id]) pendingChanges[id] = {mod, rec, changes:{}};
-  pendingChanges[id].changes[key] = {oldVal, newVal};
+  // Si el nuevo valor es igual al original guardado, eliminar el cambio
+  const original = pendingChanges[id].changes[key]?.oldVal;
+  if(original !== undefined && String(original)===String(newVal)) {
+    delete pendingChanges[id].changes[key];
+    if(!Object.keys(pendingChanges[id].changes).length) delete pendingChanges[id];
+  } else {
+    const baseOld = pendingChanges[id].changes[key]?.oldVal ?? oldVal;
+    pendingChanges[id].changes[key] = {oldVal: baseOld, newVal};
+  }
   rec[key] = newVal;
-  // Marcar botón como pendiente
+  // Actualizar botón
   const btn = document.getElementById('btn-save-detail');
-  if(btn) { btn.textContent = '● Guardar cambios'; btn.style.background = 'var(--warning)'; btn.style.borderColor = 'var(--warning)'; }
+  const hayPendientes = Object.keys(pendingChanges).length > 0;
+  if(btn) {
+    if(hayPendientes) { btn.textContent='● Guardar cambios'; btn.style.background='var(--warning)'; btn.style.borderColor='var(--warning)'; }
+    else { btn.textContent='Guardar cambios'; btn.style.background=''; btn.style.borderColor=''; }
+  }
 }
 
 async function commitSaveDetail() {
