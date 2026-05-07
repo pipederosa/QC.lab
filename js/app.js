@@ -878,10 +878,10 @@ if(scrumSvg){
     }
     consumed += frac*circ;
   });
-  const atPct=cTerminado?Math.round(atime/cTerminado*100):0;
+ const atPct=cTerminado?Math.round(atime/cTerminado*100):0;
   setEl('scrum-donut-num',atPct+'%');
 }
-   // Expiring
+  // Expiring
   const eb=document.getElementById('scrum-expiring-body');
   if(eb){const exp=d.filter(r=>{const dl=daysLeft(r.limiteQC);return(dl!==null&&dl<=7&&r.statusFinal==='Pendiente')||(r.liberadoATiempo==='Overdue'&&r.statusFinal!=='Terminado');}).sort((a,b)=>(daysLeft(a.limiteQC)||9999)-(daysLeft(b.limiteQC)||9999)).slice(0,8);eb.innerHTML=exp.map(r=>{const dl=daysLeft(r.limiteQC),rowCls=dl<0?'row-danger':dl<=3?'row-warning':'';const dt=dl<0?`<span style="color:var(--danger);font-weight:500">Overdue</span>`:dl<=7?`<span style="color:var(--warning);font-weight:500">${dl}d</span>`:`${dl}d`;return`<tr class="${rowCls}"><td>${r.cod}</td><td>${r.desc}</td><td>${r.lote}</td><td>${r.limiteQC}</td><td>${dt}</td><td>${r.planta}</td><td>${scrumBadge(r.statusFinal)}</td></tr>`;}).join('');}
 }
