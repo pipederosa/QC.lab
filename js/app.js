@@ -228,8 +228,6 @@ function buildEstDashboard() {
             <circle id="donut-arc" cx="70" cy="70" r="52" fill="none" stroke="var(--accent)" stroke-width="16" stroke-dasharray="0 327" stroke-dashoffset="82" stroke-linecap="butt" style="display:none"/>
           </svg>
           <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
-            <div class="donut-pct" id="donut-num" style="font-size:15px;font-weight:600">—</div>
-            <div class="donut-lbl" style="font-size:9px">completados</div>
           </div>
         </div>
       </div>
@@ -757,15 +755,13 @@ function buildScrumDashboard() {
   <div class="chart-row">
     <div class="card"><div class="card-title" id="scrum-trend-title">Liberados a tiempo vs Overdue — Todos</div><div class="bar-chart" id="scrum-trend-chart"></div></div>
     <div class="card"><div class="card-title">Estado de lotes</div>
-      <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
-        <div id="scrum-legend" style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0"></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-top:8px">
+        <div id="scrum-legend" style="display:flex;flex-direction:column;gap:6px;"></div>
         <div style="position:relative;flex-shrink:0">
           <svg viewBox="0 0 160 160" width="160" height="160" id="scrum-donut-svg">
             <circle cx="80" cy="80" r="46" fill="none" stroke="var(--border)" stroke-width="14"/>
           </svg>
-          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
-            <div id="scrum-donut-num" style="font-size:15px;font-weight:600;color:var(--text1)">—</div>
-            <div style="font-size:9px;color:var(--text3)">a tiempo</div>
+         <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
           </div>
         </div>
       </div>
