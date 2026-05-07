@@ -220,11 +220,11 @@ function buildEstDashboard() {
 <div class="chart-row">
     <div class="card"><div class="card-title" id="est-trend-title">Tendencia de cumplimiento — Todas las plantas</div><div class="bar-chart" id="est-trend-chart"></div></div>
     <div class="card"><div class="card-title">Estado de estudios</div>
-      <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
-        <div class="legend-items" id="est-legend" style="flex:1;min-width:0"></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-top:8px">
+        <div class="legend-items" id="est-legend" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;justify-content:center"></div>
         <div style="position:relative;flex-shrink:0">
-          <svg viewBox="0 0 140 140" width="140" height="140" id="est-donut-svg">
-            <circle cx="70" cy="70" r="52" fill="none" stroke="var(--border)" stroke-width="16"/>
+         <svg viewBox="0 0 160 160" width="160" height="160" id="est-donut-svg">
+            <circle cx="80" cy="80" r="46" fill="none" stroke="var(--border)" stroke-width="14"/>
             <circle id="donut-arc" cx="70" cy="70" r="52" fill="none" stroke="var(--accent)" stroke-width="16" stroke-dasharray="0 327" stroke-dashoffset="82" stroke-linecap="butt" style="display:none"/>
           </svg>
           <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
@@ -291,7 +291,7 @@ const cCancelado = d.filter(s=>s.estado==='Cancelado').length;
 const svgEl = document.getElementById('est-donut-svg');
 if(svgEl) {
   svgEl.querySelectorAll('.donut-seg,.donut-lbl-txt').forEach(e=>e.remove());
-  const r=52,circ=2*Math.PI*r,cx=70,cy=70,sw=16;
+  const r=46,circ=2*Math.PI*r,cx=80,cy=80,sw=14;
   const segs=[
     {val:cCompleto,  col:'#27500A', label:'Completos'},
     {val:cProceso,   col:'#EF9F27', label:'En proceso'},
@@ -318,7 +318,7 @@ if(svgEl) {
     // Label afuera
     if(frac>0.05) {
       const midAngle = offsetAngle + frac*Math.PI;
-      const labelR = r + sw/2 + 12;
+      const labelR = r + sw/2 + 10;
       const lx = (cx + labelR*Math.cos(midAngle)).toFixed(1);
       const ly = (cy + labelR*Math.sin(midAngle)).toFixed(1);
       const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
@@ -765,8 +765,8 @@ function buildScrumDashboard() {
       <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
         <div id="scrum-legend" style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0"></div>
         <div style="position:relative;flex-shrink:0">
-          <svg viewBox="0 0 140 140" width="140" height="140" id="scrum-donut-svg">
-            <circle cx="70" cy="70" r="52" fill="none" stroke="var(--border)" stroke-width="16"/>
+          <svg viewBox="0 0 160 160" width="160" height="160" id="scrum-donut-svg">
+            <circle cx="80" cy="80" r="46" fill="none" stroke="var(--border)" stroke-width="14"/>
           </svg>
           <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
             <div id="scrum-donut-num" style="font-size:15px;font-weight:600;color:var(--text1)">—</div>
@@ -846,7 +846,7 @@ if(lEl){
 }
 if(scrumSvg){
   scrumSvg.querySelectorAll('.donut-seg,.donut-lbl-txt').forEach(e=>e.remove());
-  const r=52,circ=2*Math.PI*r,cx=70,cy=70,sw=16;
+  const r=46,circ=2*Math.PI*r,cx=80,cy=80,sw=14;
   const segs=[
     {val:cTerminado, col:'#27500A'},
     {val:cPendienteS,col:'#185FA5'},
@@ -869,7 +869,7 @@ if(scrumSvg){
     scrumSvg.appendChild(circle);
     if(frac>0.05){
       const midAngle=offsetAngle+frac*Math.PI;
-      const labelR=r+sw/2+12;
+      const labelR=r+sw/2+10;
       const lx=(cx+labelR*Math.cos(midAngle)).toFixed(1);
       const ly=(cy+labelR*Math.sin(midAngle)).toFixed(1);
       const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
