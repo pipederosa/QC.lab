@@ -224,7 +224,7 @@ function buildEstDashboard() {
         <div class="legend-items" id="est-legend" style="display:flex;flex-direction:column;gap:6px;justify-content:center"></div>
         <div style="position:relative;flex-shrink:0">
          <svg viewBox="0 0 160 160" width="200" height="200" id="est-donut-svg">
-            <circle cx="80" cy="80" r="46" fill="none" stroke="var(--border)" stroke-width="14"/>
+            <circle cx="80" cy="80" r="46" fill="none" stroke="var(--border)" stroke-width="22"/>
             <circle id="donut-arc" cx="70" cy="70" r="52" fill="none" stroke="var(--accent)" stroke-width="16" stroke-dasharray="0 327" stroke-dashoffset="82" stroke-linecap="butt" style="display:none"/>
           </svg>
           <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
@@ -289,7 +289,7 @@ const cCancelado = d.filter(s=>s.estado==='Cancelado').length;
 const svgEl = document.getElementById('est-donut-svg');
 if(svgEl) {
   svgEl.querySelectorAll('.donut-seg,.donut-lbl-txt').forEach(e=>e.remove());
-  const r=46,circ=2*Math.PI*r,cx=80,cy=80,sw=14;
+  const r=46,circ=2*Math.PI*r,cx=80,cy=80,sw=22;
   const segs=[
     {val:cCompleto,  col:'#27500A', label:'Completos'},
     {val:cProceso,   col:'#EF9F27', label:'En proceso'},
@@ -759,7 +759,7 @@ function buildScrumDashboard() {
         <div id="scrum-legend" style="display:flex;flex-direction:column;gap:6px;"></div>
         <div style="position:relative;flex-shrink:0">
           <svg viewBox="0 0 160 160" width="200" height="200" id="scrum-donut-svg">
-            <circle cx="80" cy="80" r="46" fill="none" stroke="var(--border)" stroke-width="14"/>
+            <circle cx="80" cy="80" r="46" fill="none" stroke="var(--border)" stroke-width="22"/>
           </svg>
          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
           </div>
@@ -837,7 +837,7 @@ if(lEl){
 }
 if(scrumSvg){
   scrumSvg.querySelectorAll('.donut-seg,.donut-lbl-txt').forEach(e=>e.remove());
-  const r=46,circ=2*Math.PI*r,cx=80,cy=80,sw=14;
+  const r=46,circ=2*Math.PI*r,cx=80,cy=80,sw=22;
   const segs=[
     {val:cTerminado, col:'#27500A'},
     {val:cPendienteS,col:'#185FA5'},
