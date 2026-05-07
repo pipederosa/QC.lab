@@ -221,7 +221,7 @@ function buildEstDashboard() {
     <div class="card"><div class="card-title" id="est-trend-title">Tendencia de cumplimiento — Todas las plantas</div><div class="bar-chart" id="est-trend-chart"></div></div>
     <div class="card"><div class="card-title">Estado de estudios</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-top:8px">
-        <div class="legend-items" id="est-legend" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;justify-content:center"></div>
+        <div class="legend-items" id="est-legend" style="display:flex;flex-direction:column;gap:6px;justify-content:center"></div>
         <div style="position:relative;flex-shrink:0">
          <svg viewBox="0 0 160 160" width="160" height="160" id="est-donut-svg">
             <circle cx="80" cy="80" r="46" fill="none" stroke="var(--border)" stroke-width="14"/>
@@ -298,41 +298,36 @@ if(svgEl) {
     {val:cPendiente, col:'#185FA5', label:'Pendientes'},
     {val:cCancelado, col:'#888780', label:'Cancelados'},
   ];
-  let offsetAngle = -Math.PI/2;
+  let consumed = 0;
   segs.forEach(seg=>{
     if(!seg.val) return;
     const frac=seg.val/total;
     const dash=(frac*circ).toFixed(1);
     const gap=(circ*(1-frac)).toFixed(1);
-    const dashOffset = -(offsetAngle/(2*Math.PI))*circ - r*Math.PI/2;
     const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
     circle.setAttribute('class','donut-seg');
     circle.setAttribute('cx',cx);circle.setAttribute('cy',cy);circle.setAttribute('r',r);
-    circle.setAttribute('fill','none');
-    circle.setAttribute('stroke',seg.col);
+    circle.setAttribute('fill','none');circle.setAttribute('stroke',seg.col);
     circle.setAttribute('stroke-width',sw);
     circle.setAttribute('stroke-dasharray',`${dash} ${gap}`);
-    circle.setAttribute('stroke-dashoffset', -(offsetAngle/(2*Math.PI)*circ) + circ/4 );
+    circle.setAttribute('stroke-dashoffset', (circ/4 - consumed).toFixed(1));
     circle.setAttribute('stroke-linecap','butt');
     svgEl.appendChild(circle);
-    // Label afuera
-    if(frac>0.05) {
-      const midAngle = offsetAngle + frac*Math.PI;
-      const labelR = r + sw/2 + 10;
+    if(frac>0.05){
+      const midFrac = consumed + (frac*circ)/2;
+      const midAngle = (midFrac/circ)*2*Math.PI - Math.PI/2;
+      const labelR = r + sw/2 + 11;
       const lx = (cx + labelR*Math.cos(midAngle)).toFixed(1);
       const ly = (cy + labelR*Math.sin(midAngle)).toFixed(1);
       const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
       txt.setAttribute('class','donut-lbl-txt');
       txt.setAttribute('x',lx);txt.setAttribute('y',ly);
-      txt.setAttribute('text-anchor','middle');
-      txt.setAttribute('dominant-baseline','middle');
-      txt.setAttribute('font-size','9');
-      txt.setAttribute('fill',seg.col);
-      txt.setAttribute('font-weight','600');
+      txt.setAttribute('text-anchor','middle');txt.setAttribute('dominant-baseline','middle');
+      txt.setAttribute('font-size','9');txt.setAttribute('fill',seg.col);txt.setAttribute('font-weight','600');
       txt.textContent=`${Math.round(frac*100)}%`;
       svgEl.appendChild(txt);
     }
-    offsetAngle += frac*2*Math.PI;
+    consumed += frac*circ;
   });
 }
 setEl('donut-num', pct+'%');
@@ -852,9 +847,9 @@ if(scrumSvg){
     {val:cPendienteS,col:'#185FA5'},
     {val:cOverdue,   col:'#E24B4A'},
   ];
-  let offsetAngle=-Math.PI/2;
+  let consumed = 0;
   segs.forEach(seg=>{
-    if(!seg.val)return;
+    if(!seg.val) return;
     const frac=seg.val/totalS;
     const dash=(frac*circ).toFixed(1);
     const gap=(circ*(1-frac)).toFixed(1);
@@ -864,14 +859,15 @@ if(scrumSvg){
     circle.setAttribute('fill','none');circle.setAttribute('stroke',seg.col);
     circle.setAttribute('stroke-width',sw);
     circle.setAttribute('stroke-dasharray',`${dash} ${gap}`);
-    circle.setAttribute('stroke-dashoffset',-(offsetAngle/(2*Math.PI)*circ)+circ/4);
+    circle.setAttribute('stroke-dashoffset', (circ/4 - consumed).toFixed(1));
     circle.setAttribute('stroke-linecap','butt');
-    scrumSvg.appendChild(circle);
+    svgEl.appendChild(circle);
     if(frac>0.05){
-      const midAngle=offsetAngle+frac*Math.PI;
-      const labelR=r+sw/2+10;
-      const lx=(cx+labelR*Math.cos(midAngle)).toFixed(1);
-      const ly=(cy+labelR*Math.sin(midAngle)).toFixed(1);
+      const midFrac = consumed + (frac*circ)/2;
+      const midAngle = (midFrac/circ)*2*Math.PI - Math.PI/2;
+      const labelR = r + sw/2 + 11;
+      const lx = (cx + labelR*Math.cos(midAngle)).toFixed(1);
+      const ly = (cy + labelR*Math.sin(midAngle)).toFixed(1);
       const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
       txt.setAttribute('class','donut-lbl-txt');
       txt.setAttribute('x',lx);txt.setAttribute('y',ly);
@@ -880,7 +876,7 @@ if(scrumSvg){
       txt.textContent=`${Math.round(frac*100)}%`;
       scrumSvg.appendChild(txt);
     }
-    offsetAngle+=frac*2*Math.PI;
+    consumed += frac*circ;
   });
   const atPct=cTerminado?Math.round(atime/cTerminado*100):0;
   setEl('scrum-donut-num',atPct+'%');
