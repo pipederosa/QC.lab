@@ -1271,7 +1271,7 @@ function renderCodigosTable(mod) {
       <td>${c.familia1||'—'}</td>
       <td>${c.familia2||'—'}</td>
       <td>${c.division||'—'}</td>
-      ${isEst?<td>${c.condicion||'—'}</td><td>${c.valido??'—'}</td>:<td>${c.lead_time||'—'}</td><td>${c.subdivision||'—'}</td>}
+      ${isEst?`<td>${c.condicion||'—'}</td><td>${c.valido??'—'}</td>`:`<td>${c.lead_time||'—'}</td><td>${c.subdivision||'—'}</td>`}
       <td><span style="font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;background:${c.activo!==false?'var(--success-light)':'var(--surface2)'};color:${c.activo!==false?'var(--success-text)':'var(--text3)'}">${c.activo!==false?'Activo':'Inactivo'}</span></td>
       ${canEdit?`<td><div style="display:flex;gap:6px">
         <button class="btn btn-sm btn-ghost" onclick="editCodigo(${c.id},'${mod}')">Editar</button>
