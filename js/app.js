@@ -1176,7 +1176,7 @@ function buildCodigosPage(mod) {
       ${isEst?`
       <div class="field"><label>Condición</label><input id="cf-condicion" placeholder="Ej: 25°C / 60% HR"></div>
       <div class="field"><label>Válido (meses)</label><input id="cf-valido" type="number" min="0" placeholder="Ej: 3"></div>
-      :
+      ':'
       <div class="field"><label>Lead time</label><input id="cf-leadtime" placeholder="Ej: 30 días"></div>
       <div class="field"><label>Subdivisión</label><input id="cf-subdivision" placeholder="Ej: Hormonales"></div>
       `}
