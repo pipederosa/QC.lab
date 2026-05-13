@@ -1262,7 +1262,7 @@ function renderCodigosTable(mod) {
   const tbody = document.getElementById('codigos-tbody');
   const footer = document.getElementById('codigos-footer');
   if(!tbody) return;
-  if(footer) footer.textContent = ${data.length} registro${data.length!==1?'s':''};
+  if(footer) footer.textContent = `${data.length} registro${data.length!==1?'s':''}`;
   tbody.innerHTML = data.map(c=>`
     <tr style="${c.activo===false?'opacity:.5':''}">
       <td style="font-family:var(--font-mono);font-size:11px">${c.codigo}</td>
