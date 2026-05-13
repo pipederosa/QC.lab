@@ -30,3 +30,6 @@ let AUDIT_LOG = [];
 
 /* ---- QUARTERS P1/P2 (para gráfico de tendencia por quarter) ---- */
 // ya definidos arriba
+
+let CODIGOS_EST = [];
+let CODIGOS_SCRUM = [};
