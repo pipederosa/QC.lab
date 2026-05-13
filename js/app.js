@@ -48,6 +48,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   STUDIES     = await dbGetStudies();
   SCRUM_RECORDS = await dbGetScrum();
   AUDIT_LOG   = await dbGetAudit();
+   CODIGOS_EST  = await dbGetCodigosEst();
+   CODIGOS_SCRUM  = await dbGetCodigosScrum();
   if (!USERS_LIST || USERS_LIST.length === 0) {
       document.body.innerHTML = '<div style="padding:40px;color:red">Error conectando a supabase. Revisá la consola.</div>';
   }
@@ -95,18 +97,20 @@ function renderModule() {
 
 /* ============ NAV ============ */
 const EST_PAGES = [
-  {id:'dashboard', label:'Dashboard', roles:['viewer','analyst','supervisor','admin']},
-  {id:'results',   label:'Resultados',roles:['viewer','analyst','supervisor','admin']},
-  {id:'full',      label:'Detalle',   roles:['viewer','analyst','supervisor','admin']},
+  {id:'dashboard', label:'Dashboard',  roles:['viewer','analyst','supervisor','admin']},
+  {id:'results',   label:'Resultados', roles:['viewer','analyst','supervisor','admin']},
+  {id:'full',      label:'Detalle',    roles:['viewer','analyst','supervisor','admin']},
   {id:'form',      label:'Nuevo estudio', roles:['analyst','supervisor','admin']},
-  {id:'audit',     label:'Actividad', roles:['supervisor','admin']},
+  {id:'codigos',   label:'Códigos',    roles:['viewer','analyst','supervisor','admin']},
+  {id:'audit',     label:'Actividad',  roles:['supervisor','admin']},
 ];
 const SCRUM_PAGES = [
-  {id:'dashboard', label:'Dashboard', roles:['viewer','analyst','supervisor','admin']},
-  {id:'results',   label:'Resultados',roles:['viewer','analyst','supervisor','admin']},
-  {id:'full',      label:'Detalle',   roles:['viewer','analyst','supervisor','admin']},
-  {id:'form',      label:'Nuevo lote',roles:['analyst','supervisor','admin']},
-  {id:'audit',     label:'Actividad', roles:['supervisor','admin']},
+  {id:'dashboard', label:'Dashboard',  roles:['viewer','analyst','supervisor','admin']},
+  {id:'results',   label:'Resultados', roles:['viewer','analyst','supervisor','admin']},
+  {id:'full',      label:'Detalle',    roles:['viewer','analyst','supervisor','admin']},
+  {id:'form',      label:'Nuevo lote', roles:['analyst','supervisor','admin']},
+  {id:'codigos',   label:'Códigos',    roles:['viewer','analyst','supervisor','admin']},
+  {id:'audit',     label:'Actividad',  roles:['supervisor','admin']},
 ];
 
 function renderNav() {
@@ -135,12 +139,14 @@ function renderContent() {
     else if (currentPage === 'full')    { main.innerHTML = buildDetailPage('est'); bindDetailPage('est'); }
     else if (currentPage === 'form')    { main.innerHTML = buildEstForm(); bindEstForm(); }
     else if (currentPage === 'audit')   { main.innerHTML = buildAuditPage('est'); bindAuditPage(); }
+     else if (currentPage === 'codigos') {main.innerHTML = buildCodigosPage('est'); bindCodigosPage('est');}
   } else if (currentModule === 'scrum') {
     if (currentPage === 'dashboard') { main.innerHTML = buildScrumDashboard(); bindScrumDashboard(); }
     else if (currentPage === 'results') { main.innerHTML = buildScrumResults(); bindScrumResults(); }
     else if (currentPage === 'full')    { main.innerHTML = buildDetailPage('scrum'); bindDetailPage('scrum'); }
     else if (currentPage === 'form')    { main.innerHTML = buildScrumForm(); bindScrumForm(); }
     else if (currentPage === 'audit')   { main.innerHTML = buildAuditPage('scrum'); bindAuditPage(); }
+      else if (currentPage === 'codigos') {main.innerHTML = buildCodigosPage('scrum'); bindCodigosPage('scrum');}
   } else if (currentModule === 'users') {
     main.innerHTML = buildUsersPage(); bindUsersPage();
   }
@@ -1138,6 +1144,190 @@ async function submitScrumForm() {
   await dbInsertAudit(entry);
   alert(`Lote guardado: ${desc} — ${lote}`);
   navigateTo('results');
+}
+
+/* ============================================================
+   CÓDIGOS — EST y SCRUM
+   ============================================================ */
+let editingCodigoId = null;
+let editingCodigoMod = null;
+
+function buildCodigosPage(mod) {
+  const canEdit = ROLES[currentUser.rol].canApprove;
+  const isEst = mod === 'est';
+  return `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+    <div>
+      <h2 style="font-size:16px;font-weight:500;margin-bottom:2px">Códigos de producto — ${isEst?'Estabilidades':'SCRUM'}</h2>
+      <p style="font-size:12px;color:var(--text3)">Referencia de productos · Solo supervisores y admin pueden editar</p>
+    </div>
+    ${canEdit?<button class="btn btn-primary" id="btn-new-codigo">+ Nuevo código</button>:''}
+  </div>
+
+  <div class="card" id="codigo-form-card" style="display:none;margin-bottom:16px">
+    <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;font-family:var(--font-mono)"><span id="codigo-form-title">Nuevo código</span></div>
+    <div class="form-grid">
+      <div class="field"><label>Código <span class="req-star">*</span></label><input id="cf-codigo" placeholder="Ej: PRD-00421"></div>
+      <div class="field"><label>Producto <span class="req-star">*</span></label><input id="cf-producto" placeholder="Nombre del producto"></div>
+      <div class="field"><label>Proveedor</label><input id="cf-proveedor"></div>
+      <div class="field"><label>Familia producto 1</label><input id="cf-familia1"></div>
+      <div class="field"><label>Familia producto 2</label><input id="cf-familia2"></div>
+      <div class="field"><label>División</label><select id="cf-division"><option value="">Seleccionar...</option><option>PH</option><option>CH</option></select></div>
+      ${isEst?`
+      <div class="field"><label>Condición</label><input id="cf-condicion" placeholder="Ej: 25°C / 60% HR"></div>
+      <div class="field"><label>Válido (meses)</label><input id="cf-valido" type="number" min="0" placeholder="Ej: 3"></div>
+      :
+      <div class="field"><label>Lead time</label><input id="cf-leadtime" placeholder="Ej: 30 días"></div>
+      <div class="field"><label>Subdivisión</label><input id="cf-subdivision" placeholder="Ej: Hormonales"></div>
+      `}
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost" id="btn-cancel-codigo">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-codigo">Guardar</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+    <input class="filter-input" id="cod-search" placeholder="Buscar código o producto..." style="width:240px">
+    ${multiFilter('cf-div','División',['PH','CH'])}
+    ${isEst?multiFilter('cf-activo','Estado',[{val:'true',label:'Activo'},{val:'false',label:'Inactivo'}],true):''}
+    <button class="btn btn-ghost btn-sm" id="cod-clear" style="color:var(--danger)">✕ Limpiar</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Código</th>
+        <th>Producto</th>
+        <th>Proveedor</th>
+        <th>Familia 1</th>
+        <th>Familia 2</th>
+        <th>División</th>
+        ${isEst?'<th>Condición</th><th>Válido (m)</th>':'<th>Lead time</th><th>Subdivisión</th>'}
+        <th>Estado</th>
+        ${canEdit?'<th>Acciones</th>':''}
+      </tr></thead>
+      <tbody id="codigos-tbody"></tbody>
+    </table>
+  </div>
+  <div class="table-footer" id="codigos-footer"></div>`;
+}
+
+function bindCodigosPage(mod) {
+  const canEdit = ROLES[currentUser.rol].canApprove;
+  renderCodigosTable(mod);
+
+  document.getElementById('cod-search')?.addEventListener('input', ()=>renderCodigosTable(mod));
+  document.getElementById('cod-clear')?.addEventListener('click', ()=>{
+    document.getElementById('cod-search').value='';
+    clearMultiFilters('cf',['div','activo']);
+    renderCodigosTable(mod);
+  });
+  bindMultiFilterGroup('cf',['div','activo'],()=>renderCodigosTable(mod));
+
+  if(!canEdit) return;
+
+  document.getElementById('btn-new-codigo')?.addEventListener('click',()=>{
+    editingCodigoId=null; editingCodigoMod=mod;
+    setEl('codigo-form-title','Nuevo código');
+    ['cf-codigo','cf-producto','cf-proveedor','cf-familia1','cf-familia2','cf-condicion','cf-valido','cf-leadtime','cf-subdivision'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    const div=document.getElementById('cf-division');if(div)div.value='';
+    document.getElementById('codigo-form-card').style.display='';
+  });
+
+  document.getElementById('btn-cancel-codigo')?.addEventListener('click',()=>{
+    document.getElementById('codigo-form-card').style.display='none';
+    editingCodigoId=null;
+  });
+
+  document.getElementById('btn-save-codigo')?.addEventListener('click',()=>saveCodigo(mod));
+}
+
+function getCodigosFiltered(mod) {
+  const src = mod==='est' ? CODIGOS_EST : CODIGOS_SCRUM;
+  const q = (document.getElementById('cod-search')?.value||'').toLowerCase();
+  const divs = getChecked('cf-div');
+  const activoV = getChecked('cf-activo');
+  let data = [...src];
+  if(q) data = data.filter(c=>c.codigo.toLowerCase().includes(q)||c.producto.toLowerCase().includes(q));
+  if(divs.length) data = data.filter(c=>divs.includes(c.division));
+  if(activoV.length) data = data.filter(c=>activoV.includes(String(c.activo)));
+  return data;
+}
+
+function renderCodigosTable(mod) {
+  const canEdit = ROLES[currentUser.rol].canApprove;
+  const isEst = mod==='est';
+  const data = getCodigosFiltered(mod);
+  const tbody = document.getElementById('codigos-tbody');
+  const footer = document.getElementById('codigos-footer');
+  if(!tbody) return;
+  if(footer) footer.textContent = ${data.length} registro${data.length!==1?'s':''};
+  tbody.innerHTML = data.map(c=>`
+    <tr style="${c.activo===false?'opacity:.5':''}">
+      <td style="font-family:var(--font-mono);font-size:11px">${c.codigo}</td>
+      <td>${c.producto}</td>
+      <td>${c.proveedor||'—'}</td>
+      <td>${c.familia1||'—'}</td>
+      <td>${c.familia2||'—'}</td>
+      <td>${c.division||'—'}</td>
+      ${isEst?<td>${c.condicion||'—'}</td><td>${c.valido??'—'}</td>:<td>${c.lead_time||'—'}</td><td>${c.subdivision||'—'}</td>}
+      <td><span style="font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;background:${c.activo!==false?'var(--success-light)':'var(--surface2)'};color:${c.activo!==false?'var(--success-text)':'var(--text3)'}">${c.activo!==false?'Activo':'Inactivo'}</span></td>
+      ${canEdit?`<td><div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-ghost" onclick="editCodigo(${c.id},'${mod}')">Editar</button>
+        <button class="btn btn-sm btn-ghost" style="color:${c.activo!==false?'var(--danger)':'var(--success)'}" onclick="toggleCodigoActivo(${c.id},'${mod}')">${c.activo!==false?'Desactivar':'Activar'}</button>
+      </div></td>`:''}
+    </tr>
+  `).join('');
+}
+
+function editCodigo(id, mod) {
+  const src = mod==='est' ? CODIGOS_EST : CODIGOS_SCRUM;
+  const c = src.find(x=>x.id===id); if(!c) return;
+  editingCodigoId=id; editingCodigoMod=mod;
+  setEl('codigo-form-title','Editar código');
+  const set=(eid,val)=>{const el=document.getElementById(eid);if(el)el.value=val||'';};
+  set('cf-codigo',c.codigo); set('cf-producto',c.producto); set('cf-proveedor',c.proveedor);
+  set('cf-familia1',c.familia1); set('cf-familia2',c.familia2); set('cf-division',c.division);
+  if(mod==='est'){set('cf-condicion',c.condicion);set('cf-valido',c.valido);}
+  else{set('cf-leadtime',c.lead_time);set('cf-subdivision',c.subdivision);}
+  document.getElementById('codigo-form-card').style.display='';
+}
+
+async function saveCodigo(mod) {
+  const codigo=v('cf-codigo').trim(), producto=v('cf-producto').trim();
+  if(!codigo||!producto){alert('Código y producto son obligatorios.');return;}
+  const isEst=mod==='est';
+  const fields={
+    codigo, producto,
+    proveedor:v('cf-proveedor')||null,
+    familia1:v('cf-familia1')||null,
+    familia2:v('cf-familia2')||null,
+    division:v('cf-division')||null,
+    activo:true,
+    ...(isEst?{condicion:v('cf-condicion')||null, valido:v('cf-valido')?Number(v('cf-valido')):null}
+            :{lead_time:v('cf-leadtime')||null, subdivision:v('cf-subdivision')||null})
+  };
+  if(editingCodigoId){
+    if(isEst){ await dbUpdateCodigoEst(editingCodigoId,fields); const i=CODIGOS_EST.findIndex(x=>x.id===editingCodigoId); if(i>=0)CODIGOS_EST[i]={...CODIGOS_EST[i],...fields}; }
+    else{ await dbUpdateCodigoScrum(editingCodigoId,fields); const i=CODIGOS_SCRUM.findIndex(x=>x.id===editingCodigoId); if(i>=0)CODIGOS_SCRUM[i]={...CODIGOS_SCRUM[i],...fields}; }
+  } else {
+    if(isEst){ const saved=await dbInsertCodigoEst(fields); if(saved)CODIGOS_EST.push(saved); }
+    else{ const saved=await dbInsertCodigoScrum(fields); if(saved)CODIGOS_SCRUM.push(saved); }
+  }
+  document.getElementById('codigo-form-card').style.display='none';
+  editingCodigoId=null;
+  renderCodigosTable(mod);
+}
+
+async function toggleCodigoActivo(id, mod) {
+  const src = mod==='est' ? CODIGOS_EST : CODIGOS_SCRUM;
+  const c = src.find(x=>x.id===id); if(!c) return;
+  const newActivo = c.activo===false ? true : false;
+  if(mod==='est') await dbUpdateCodigoEst(id,{activo:newActivo});
+  else await dbUpdateCodigoScrum(id,{activo:newActivo});
+  c.activo=newActivo;
+  renderCodigosTable(mod);
 }
 
 /* ============================================================
