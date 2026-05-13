@@ -340,10 +340,17 @@ setEl('donut-num', pct+'%');
   const tEl = document.getElementById('est-trend-chart');
   const tTi = document.getElementById('est-trend-title');
   if (tEl) {
-    let q; if(estDashLoc==='p1'){q=QUARTERS_P1;if(tTi)tTi.textContent='Tendencia de cumplimiento — Planta 1';}
-    else if(estDashLoc==='p2'){q=QUARTERS_P2;if(tTi)tTi.textContent='Tendencia de cumplimiento — Planta 2';}
-    else{q=QUARTERS_TODAS;if(tTi)tTi.textContent='Tendencia de cumplimiento — Todas las plantas';}
-    tEl.innerHTML=q.map(x=>{const col=x.pct>=85?'#639922':x.pct>=75?'#EF9F27':'#E24B4A';return`<div class="bar-row"><div class="bar-label">${x.q}</div><div class="bar-track"><div class="bar-fill" style="width:${x.pct}%;background:${col}"></div></div><div class="bar-pct" style="color:${col}">${x.pct}%</div></div>`;}).join('');
+    if(tTi)tTi.textContent=`Tendencia de cumplimiento — ${estDashLoc==='p1'?'Planta 1':estDashLoc==='p2'?'Planta 2':'Todas las plantas'}`;
+const estudiosQ=(q,year)=>d.filter(s=>{const dt=parseDate(s.ingreso);if(!dt)return false;const qm=Math.floor(dt.getMonth()/3);return dt.getFullYear()===year&&qm===(q-1);});
+const calcPct=(sts)=>sts.length?Math.round(sts.filter(s=>s.cumpl==='Sí'||s.cumpl==='Si').length/sts.length*100):0;
+const q=[
+  {q:'Q1 2025',pct:calcPct(estudiosQ(1,2025))},
+  {q:'Q2 2025',pct:calcPct(estudiosQ(2,2025))},
+  {q:'Q3 2025',pct:calcPct(estudiosQ(3,2025))},
+  {q:'Q4 2025',pct:calcPct(estudiosQ(4,2025))},
+  {q:'Q1 2026',pct:calcPct(estudiosQ(1,2026))},
+];
+tEl.innerHTML=q.map(x=>{const col=x.pct>=85?'#639922':x.pct>=75?'#EF9F27':'#E24B4A';return`<div class="bar-row"><div class="bar-label">${x.q}</div><div class="bar-track"><div class="bar-fill" style="width:${x.pct}%;background:${col}"></div></div><div class="bar-pct" style="color:${col}">${x.pct}%</div></div>`;}).join('');
   }
   // Legend
   const lEl = document.getElementById('est-legend');
