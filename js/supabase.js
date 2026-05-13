@@ -134,3 +134,39 @@ function mapScrumToDb(f) {
     granel_comp_control:f.granelCompControl, granel:f.granel
   };
 }
+
+/* ---- CÓDIGOS ESTABILIDADES ---- */
+async function dbGetCodigosEst() {
+  const { data, error } = await sb.from('codigos_est').select('*').order('id');
+  if (error) { console.error(error); return []; }
+  return data;
+}
+
+async function dbInsertCodigoEst(fields) {
+  const { data, error } = await sb.from('codigos_est').insert(fields).select().single();
+  if (error) { console.error(error); return null; }
+  return data;
+}
+
+async function dbUpdateCodigoEst(id, fields) {
+  const { error } = await sb.from('codigos_est').update(fields).eq('id', id);
+  if (error) console.error(error);
+}
+
+/* ---- CÓDIGOS SCRUM ---- */
+async function dbGetCodigosScrum() {
+  const { data, error } = await sb.from('codigos_scrum').select('*').order('id');
+  if (error) { console.error(error); return []; }
+  return data;
+}
+
+async function dbInsertCodigoScrum(fields) {
+  const { data, error } = await sb.from('codigos_scrum').insert(fields).select().single();
+  if (error) { console.error(error); return null; }
+  return data;
+}
+
+async function dbUpdateCodigoScrum(id, fields) {
+  const { error } = await sb.from('codigos_scrum').update(fields).eq('id', id);
+  if (error) console.error(error);
+}
