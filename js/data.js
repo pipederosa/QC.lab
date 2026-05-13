@@ -32,4 +32,4 @@ let AUDIT_LOG = [];
 // ya definidos arriba
 
 let CODIGOS_EST = [];
-let CODIGOS_SCRUM = [};
+let CODIGOS_SCRUM = [];
