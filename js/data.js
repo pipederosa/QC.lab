@@ -9,7 +9,7 @@ const UBICACIONES = {
 };
 
 /* ---- QUARTERS ---- */
-const QUARTERS_TODAS = [
+/*const QUARTERS_TODAS = [
   {q:'Q1 2025',pct:82},{q:'Q2 2025',pct:85},{q:'Q3 2025',pct:79},{q:'Q4 2025',pct:88},{q:'Q1 2026',pct:87}
 ];
 const QUARTERS_P1 = [
