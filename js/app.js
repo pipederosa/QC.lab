@@ -1161,7 +1161,7 @@ function buildCodigosPage(mod) {
       <h2 style="font-size:16px;font-weight:500;margin-bottom:2px">Códigos de producto — ${isEst?'Estabilidades':'SCRUM'}</h2>
       <p style="font-size:12px;color:var(--text3)">Referencia de productos · Solo supervisores y admin pueden editar</p>
     </div>
-    ${canEdit?<button class="btn btn-primary" id="btn-new-codigo">+ Nuevo código</button>:''}
+    ${canEdit?'<button class="btn btn-primary" id="btn-new-codigo">+ Nuevo código</button>':''}
   </div>
 
   <div class="card" id="codigo-form-card" style="display:none;margin-bottom:16px">
