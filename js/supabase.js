@@ -8,18 +8,16 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* ---- STUDIES ---- */
+/* ---- STUDIES (tabla vieja, se mantiene por compatibilidad) ---- */
 async function dbGetStudies() {
   const { data, error } = await sb.from('studies').select('*').order('id');
   if (error) { console.error(error); return []; }
   return data.map(mapStudy);
 }
-
 async function dbUpdateStudy(id, fields) {
   const { error } = await sb.from('studies').update(mapStudyToDb(fields)).eq('id', id);
   if (error) console.error(error);
 }
-
 async function dbInsertStudy(fields) {
   const { data, error } = await sb.from('studies').insert(mapStudyToDb(fields)).select().single();
   if (error) { console.error(error); return null; }
@@ -32,12 +30,10 @@ async function dbGetScrum() {
   if (error) { console.error(error); return []; }
   return data.map(mapScrum);
 }
-
 async function dbUpdateScrum(id, fields) {
   const { error } = await sb.from('scrum_records').update(mapScrumToDb(fields)).eq('id', id);
   if (error) console.error(error);
 }
-
 async function dbInsertScrum(fields) {
   const { data, error } = await sb.from('scrum_records').insert(mapScrumToDb(fields)).select().single();
   if (error) { console.error(error); return null; }
@@ -61,13 +57,156 @@ async function dbGetAudit() {
     study: a.study_id, module: a.module
   }));
 }
-
 async function dbInsertAudit(entry) {
   await sb.from('audit_log').insert({
     who: entry.who, what: entry.what, when_ts: entry.when,
     field: entry.field, old_val: entry.old, new_val: entry.new,
     study_id: entry.study, module: entry.module
   });
+}
+
+/* ---- CÓDIGOS ESTABILIDADES ---- */
+async function dbGetCodigosEst() {
+  const { data, error } = await sb.from('codigos_est').select('*').order('id');
+  if (error) { console.error(error); return []; }
+  return data;
+}
+async function dbInsertCodigoEst(fields) {
+  const { data, error } = await sb.from('codigos_est').insert(fields).select().single();
+  if (error) { console.error(error); return null; }
+  return data;
+}
+async function dbUpdateCodigoEst(id, fields) {
+  const { error } = await sb.from('codigos_est').update(fields).eq('id', id);
+  if (error) console.error(error);
+}
+
+/* ---- CÓDIGOS SCRUM ---- */
+async function dbGetCodigosScrum() {
+  const { data, error } = await sb.from('codigos_scrum').select('*').order('id');
+  if (error) { console.error(error); return []; }
+  return data;
+}
+async function dbInsertCodigoScrum(fields) {
+  const { data, error } = await sb.from('codigos_scrum').insert(fields).select().single();
+  if (error) { console.error(error); return null; }
+  return data;
+}
+async function dbUpdateCodigoScrum(id, fields) {
+  const { error } = await sb.from('codigos_scrum').update(fields).eq('id', id);
+  if (error) console.error(error);
+}
+
+/* ---- CONDICIONES ---- */
+async function dbGetCondiciones() {
+  const { data, error } = await sb.from('condiciones').select('*').order('id');
+  if (error) { console.error(error); return []; }
+  return data;
+}
+async function dbInsertCondicion(fields) {
+  const { data, error } = await sb.from('condiciones').insert(fields).select().single();
+  if (error) { console.error(error); return null; }
+  return data;
+}
+async function dbUpdateCondicion(id, fields) {
+  const { error } = await sb.from('condiciones').update(fields).eq('id', id);
+  if (error) console.error(error);
+}
+
+/* ---- CÁMARAS ---- */
+async function dbGetCamaras() {
+  const { data, error } = await sb.from('camaras').select('*').order('id');
+  if (error) { console.error(error); return []; }
+  return data;
+}
+async function dbInsertCamara(fields) {
+  const { data, error } = await sb.from('camaras').insert(fields).select().single();
+  if (error) { console.error(error); return null; }
+  return data;
+}
+async function dbUpdateCamara(id, fields) {
+  const { error } = await sb.from('camaras').update(fields).eq('id', id);
+  if (error) console.error(error);
+}
+
+/* ---- LOTES ESTABILIDAD ---- */
+async function dbGetLotesEst() {
+  const { data, error } = await sb.from('lotes_est').select('*').order('id');
+  if (error) { console.error(error); return []; }
+  return data;
+}
+async function dbInsertLoteEst(fields) {
+  const { data, error } = await sb.from('lotes_est').insert(fields).select().single();
+  if (error) { console.error(error); return null; }
+  return data;
+}
+async function dbUpdateLoteEst(id, fields) {
+  const { error } = await sb.from('lotes_est').update(fields).eq('id', id);
+  if (error) console.error(error);
+}
+
+/* ---- LOTE CÁMARAS ---- */
+async function dbGetLoteCamaras(loteId) {
+  const { data, error } = await sb.from('lote_camaras')
+    .select('*, camaras(*), condiciones(*)')
+    .eq('lote_id', loteId)
+    .eq('activo', true);
+  if (error) { console.error(error); return []; }
+  return data;
+}
+async function dbInsertLoteCamara(fields) {
+  const { data, error } = await sb.from('lote_camaras').insert(fields).select().single();
+  if (error) { console.error(error); return null; }
+  return data;
+}
+async function dbUpdateLoteCamara(id, fields) {
+  const { error } = await sb.from('lote_camaras').update(fields).eq('id', id);
+  if (error) console.error(error);
+}
+
+/* ---- MUESTREOS PLANEADOS ---- */
+async function dbGetMuestreosPlan(loteCamaraId) {
+  const { data, error } = await sb.from('muestreos_plan')
+    .select('*')
+    .eq('lote_camara_id', loteCamaraId)
+    .order('tiempo_meses');
+  if (error) { console.error(error); return []; }
+  return data;
+}
+async function dbGetMuestreosPlanByLote(loteId) {
+  const { data, error } = await sb.from('muestreos_plan')
+    .select('*, lote_camaras!inner(lote_id, camaras(*), condiciones(*))')
+    .eq('lote_camaras.lote_id', loteId)
+    .order('tiempo_meses');
+  if (error) { console.error(error); return []; }
+  return data;
+}
+async function dbInsertMuestreoPlan(fields) {
+  const { data, error } = await sb.from('muestreos_plan').insert(fields).select().single();
+  if (error) { console.error(error); return null; }
+  return data;
+}
+async function dbUpdateMuestreoPlan(id, fields) {
+  const { error } = await sb.from('muestreos_plan').update(fields).eq('id', id);
+  if (error) console.error(error);
+}
+
+/* ---- MUESTREOS REALIZADOS ---- */
+async function dbGetMuestreosReal(muestreoPlanId) {
+  const { data, error } = await sb.from('muestreos_real')
+    .select('*')
+    .eq('muestreo_plan_id', muestreoPlanId);
+  if (error) { console.error(error); return []; }
+  return data;
+}
+async function dbInsertMuestreoReal(fields) {
+  const { data, error } = await sb.from('muestreos_real').insert(fields).select().single();
+  if (error) { console.error(error); return null; }
+  return data;
+}
+async function dbUpdateMuestreoReal(id, fields) {
+  const { error } = await sb.from('muestreos_real').update(fields).eq('id', id);
+  if (error) console.error(error);
 }
 
 /* ---- MAPPERS: DB → App ---- */
@@ -86,7 +225,6 @@ function mapStudy(r) {
     motivo:r.motivo, empaque:r.empaque, obs:r.obs
   };
 }
-
 function mapStudyToDb(f) {
   return {
     cod:f.cod, prod:f.prod, lote:f.lote, cond:f.cond, tiempo:f.tiempo,
@@ -102,7 +240,6 @@ function mapStudyToDb(f) {
     motivo:f.motivo, empaque:f.empaque, obs:f.obs
   };
 }
-
 function mapScrum(r) {
   return {
     id:r.id, cod:r.cod, planta:r.planta, desc:r.descripcion, lote:r.lote, div:r.div,
@@ -118,7 +255,6 @@ function mapScrum(r) {
     granelCompControl:r.granel_comp_control, granel:r.granel
   };
 }
-
 function mapScrumToDb(f) {
   return {
     cod:f.cod, planta:f.planta, descripcion:f.desc, lote:f.lote, div:f.div,
@@ -133,40 +269,4 @@ function mapScrumToDb(f) {
     obs:f.obs, status_final:f.statusFinal, liberado_a_tiempo:f.liberadoATiempo,
     granel_comp_control:f.granelCompControl, granel:f.granel
   };
-}
-
-/* ---- CÓDIGOS ESTABILIDADES ---- */
-async function dbGetCodigosEst() {
-  const { data, error } = await sb.from('codigos_est').select('*').order('id');
-  if (error) { console.error(error); return []; }
-  return data;
-}
-
-async function dbInsertCodigoEst(fields) {
-  const { data, error } = await sb.from('codigos_est').insert(fields).select().single();
-  if (error) { console.error(error); return null; }
-  return data;
-}
-
-async function dbUpdateCodigoEst(id, fields) {
-  const { error } = await sb.from('codigos_est').update(fields).eq('id', id);
-  if (error) console.error(error);
-}
-
-/* ---- CÓDIGOS SCRUM ---- */
-async function dbGetCodigosScrum() {
-  const { data, error } = await sb.from('codigos_scrum').select('*').order('id');
-  if (error) { console.error(error); return []; }
-  return data;
-}
-
-async function dbInsertCodigoScrum(fields) {
-  const { data, error } = await sb.from('codigos_scrum').insert(fields).select().single();
-  if (error) { console.error(error); return null; }
-  return data;
-}
-
-async function dbUpdateCodigoScrum(id, fields) {
-  const { error } = await sb.from('codigos_scrum').update(fields).eq('id', id);
-  if (error) console.error(error);
 }
