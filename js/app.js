@@ -270,9 +270,10 @@ function bindEstDashboard() {
 }
 
 function getEstDashStudies() {
-  if (estDashLoc==='p1') return STUDIES.filter(s=>s.planta==='Planta 1');
-  if (estDashLoc==='p2') return STUDIES.filter(s=>s.planta==='Planta 2');
-  return [...STUDIES];
+  const todos = [...STUDIES, ...LOTES_EST];
+  if (estDashLoc==='p1') return todos.filter(s=>(s.planta||'').includes('1'));
+  if (estDashLoc==='p2') return todos.filter(s=>(s.planta||'').includes('2'));
+  return todos;
 }
 
 function goEstResultsFiltered(filter) {
@@ -401,12 +402,11 @@ function buildEstResults() {
   <div class="table-wrap">
     <table id="est-table">
       <thead><tr>
-        <th onclick="estSort('prod')">Producto <span id="est-sort-prod"></span></th>
+        <th onclick="estSort('nombre_producto')">Producto <span id="est-sort-nombre_producto"></span></th>
         <th onclick="estSort('lote')">Lote <span id="est-sort-lote"></span></th>
-        <th onclick="estSort('div')">División <span id="est-sort-div"></span></th>
-        <th onclick="estSort('ingreso')">F. ingreso <span id="est-sort-ingreso"></span></th>
+        <th onclick="estSort('division')">División <span id="est-sort-division"></span></th>
+        <th onclick="estSort('fecha_ingreso')">F. ingreso <span id="est-sort-fecha_ingreso"></span></th>
         <th onclick="estSort('estado')">Estado <span id="est-sort-estado"></span></th>
-        <th>OOS</th>
         <th></th>
       </tr></thead>
       <tbody id="est-tbody"></tbody>
@@ -449,7 +449,7 @@ function checkMultiOption(dropId, val) {
 function getEstFilteredData() {
   const estados = getChecked('est-estado'), divs = getChecked('est-div'), oosV = getChecked('est-oos');
   const q = (document.getElementById('est-search')?.value||'').toLowerCase();
-  let data = [...STUDIES];
+  let data = [...LOTES_EST];
   if (estados.length) data = data.filter(s=>estados.includes(s.estado));
   if (divs.length)    data = data.filter(s=>divs.includes(s.div));
   if (oosV.includes('si')&&!oosV.includes('no')) data=data.filter(s=>s.oos);
@@ -468,7 +468,7 @@ function renderEstTable() {
   const tbody=document.getElementById('est-tbody'), noR=document.getElementById('est-no-results'), footer=document.getElementById('est-footer');
   let data = getEstFilteredData();
   if (estSortCol) data = data.slice().sort((a,b)=>compareVal(a,b,estSortCol)*estSortDir);
-  ['prod','lote','div','ingreso','estado'].forEach(col=>{
+ ['nombre_producto','lote','division','fecha_ingreso','estado'].forEach(col=>{
     const el=document.getElementById('est-sort-'+col);
     if(el)el.textContent=estSortCol===col?(estSortDir===1?'↑':'↓'):'';
   });
@@ -477,15 +477,13 @@ function renderEstTable() {
   noR?.classList.add('hidden');
   if(footer)footer.textContent=`${data.length} registro${data.length!==1?'s':''}`;
   tbody.innerHTML=data.map(s=>{
-    const rowCls=isExpired(s)?'row-danger':isExpiringSoon(s,15)?'row-warning':'';
-    return `<tr class="${rowCls}">
-      <td title="${s.prod}">${s.prod}</td>
+    return `<tr>
+      <td title="${s.nombre_producto||''}">${s.nombre_producto||'—'}</td>
       <td>${s.lote}</td>
-      <td>${s.div}</td>
-      <td>${s.ingreso}</td>
+      <td>${s.division||'—'}</td>
+      <td>${s.fecha_ingreso||'—'}</td>
       <td>${estBadge(s.estado)}</td>
-      <td>${s.oos?'<span class="badge badge-oos">OOS</span>':'<span class="badge badge-ok">No</span>'}</td>
-      <td><button class="link-btn" onclick="showEstDetail(${s.id})">Ver detalle</button></td>
+      <td><button class="link-btn" onclick="showEstLoteDetail(${s.id})">Ver detalle</button></td>
     </tr>`;
   }).join('');
 }
@@ -519,6 +517,15 @@ function exportEstXLSX() {
    ESTABILIDADES — DETAIL
    ============================================================ */
 let currentEstDetailId = null;
+
+function showEstLoteDetail(id) {
+  pendingChanges = {};
+  currentEstDetailId = id;
+  detailEditMode = false;
+  currentPage = 'full';
+  renderNav();
+  renderContent();
+}
 
 function showEstDetail(id) {
   pendingChanges = {};
@@ -565,7 +572,7 @@ function setDetailMode(edit) {
 
 function renderEstDetail() {
   if (!currentEstDetailId) return '<div style="padding:40px;text-align:center;color:var(--text3)">Selecciona un lote desde Resultados.</div>';
-  const s = STUDIES.find(x=>x.id===currentEstDetailId); if(!s)return'';
+ const s = LOTES_EST.find(x=>x.id===currentEstDetailId) || STUDIES.find(x=>x.id===currentEstDetailId); if(!s)return'';
   const e = detailEditMode && ROLES[currentUser.rol].canEdit;
   const dl=daysLeft(s.limite), lS=dl<0?'color:var(--danger);font-weight:500':dl<=15?'color:var(--warning);font-weight:500':'';
   const fi=(label,key,type='text',opts=null)=>detailField(s,currentEstDetailId,label,key,type,opts,e,'est');
