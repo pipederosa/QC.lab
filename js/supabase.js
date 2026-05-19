@@ -270,3 +270,11 @@ function mapScrumToDb(f) {
     granel_comp_control:f.granelCompControl, granel:f.granel
   };
 }
+
+async function dbGetMuestreosRealByLote(loteId) {
+  const { data, error } = await sb.from('muestreos_real')
+    .select(', muestreos_plan!inner(, lote_camaras!inner(lote_id))')
+    .eq('muestreos_plan.lote_camaras.lote_id', loteId);
+  if (error) { console.error(error); return []; }
+  return data;
+}
