@@ -42,6 +42,8 @@ let scrumKpiFilter = null;
 
 let editingUserId = null;
 let pendingChanges = {};
+let currentLoteCamaras = [];
+let currentMuestreosPlan = [];
 
 // Tablas state
 let tablaEstTab = 'codigos';
@@ -527,12 +529,19 @@ function showEstLoteDetail(id) {
   renderContent();
 }
 
-function showEstDetail(id) {
+async function showEstLoteDetail(id) {
   pendingChanges = {};
   currentEstDetailId = id;
   detailEditMode = false;
   currentPage = 'full';
   renderNav();
+  // Cargar cámaras y muestreos del lote
+  currentLoteCamaras = await dbGetLoteCamaras(id);
+  currentMuestreosPlan = [];
+  for(const lc of currentLoteCamaras) {
+    const ms = await dbGetMuestreosPlan(lc.id);
+    currentMuestreosPlan.push({loteCamara: lc, muestreos: ms});
+  }
   renderContent();
 }
 
@@ -572,49 +581,78 @@ function setDetailMode(edit) {
 
 function renderEstDetail() {
   if (!currentEstDetailId) return '<div style="padding:40px;text-align:center;color:var(--text3)">Selecciona un lote desde Resultados.</div>';
- const s = LOTES_EST.find(x=>x.id===currentEstDetailId) || STUDIES.find(x=>x.id===currentEstDetailId); if(!s)return'';
+  const s = LOTES_EST.find(x=>x.id===currentEstDetailId) || STUDIES.find(x=>x.id===currentEstDetailId);
+  if(!s) return '';
   const e = detailEditMode && ROLES[currentUser.rol].canEdit;
-  const dl=daysLeft(s.limite), lS=dl<0?'color:var(--danger);font-weight:500':dl<=15?'color:var(--warning);font-weight:500':'';
-  const fi=(label,key,type='text',opts=null)=>detailField(s,currentEstDetailId,label,key,type,opts,e,'est');
-  const ESTADOS=['Pendiente','En proceso','Completo','Cancelado'],APROBS=['—','Aprobado','Rechazado','Pendiente'],SN=['—','Sí','No'];
+
   return `<div class="detail-header">
     <button class="btn btn-ghost btn-sm" onclick="navigateTo('results')">← Volver</button>
-    <span class="detail-title">${s.prod} — Lote ${s.lote}</span>
-    ${estBadge(s.estado)} ${s.oos?'<span class="badge badge-oos">OOS</span>':''}
-    <span style="margin-left:auto;font-size:11px;color:var(--text3);font-family:var(--font-mono)">${s.cod||''}·${s.div||''}</span>
-    ${e?`<button class="btn btn-primary btn-sm" id="btn-save-detail" onclick="commitSaveDetail()">Guardar cambios</button>`:''}
+    <span class="detail-title">${s.nombre_producto||s.prod||'—'} — Lote ${s.lote}</span>
+    ${estBadge(s.estado)}
+    <span style="margin-left:auto;font-size:11px;color:var(--text3);font-family:var(--font-mono)">${s.codigo_producto||s.cod||''}·${s.division||s.div||''}</span>
   </div>
-  ${e?'<div class="detail-edit-notice">Modo edición activo — los cambios se guardan al confirmar.</div>':''}
+
   <div class="detail-grid">
-    <div class="card"><div class="card-title">Identificación</div><table class="detail-table"><tbody>
-      ${fi('Código','cod')}${fi('Producto','prod')}${fi('Lote','lote')}${fi('División','div','select',['CH','PH'])}${fi('Empaque','empaque')}${fi('Planta','planta','select',['Planta 1','Planta 2'])}${fi('Ubicación física','ubic','select',UBICACIONES[s.planta]||[])}${fi('Motivo','motivo')}
+    <div class="card"><div class="card-title">Identificación del lote</div><table class="detail-table"><tbody>
+      <tr><td>Código producto</td><td>${s.codigo_producto||s.cod||'—'}</td></tr>
+      <tr><td>Producto</td><td>${s.nombre_producto||s.prod||'—'}</td></tr>
+      <tr><td>Cód. semiterminado</td><td>${s.cod_semiterminado||'—'}</td></tr>
+      <tr><td>Nombre semiterminado</td><td>${s.nombre_semiterminado||'—'}</td></tr>
+      <tr><td>Lote</td><td>${s.lote||'—'}</td></tr>
+      <tr><td>División</td><td>${s.division||s.div||'—'}</td></tr>
+      <tr><td>Estado</td><td>${estBadge(s.estado)}</td></tr>
+      <tr><td>Creado por</td><td>${s.creado_por||'—'}</td></tr>
+      <tr><td>Fecha creación</td><td>${s.creado_en||'—'}</td></tr>
+      ${s.obs?`<tr><td>Observaciones</td><td>${s.obs}</td></tr>`:''}
     </tbody></table></div>
-    <div class="card"><div class="card-title">Fechas y condiciones</div><table class="detail-table"><tbody>
-      ${fi('Condiciones','cond')}${fi('Tiempo','tiempo','select',['3 meses','6 meses','9 meses','12 meses','18 meses','24 meses','36 meses'])}${fi('F. elaboración','elab','date')}${fi('F. entrada cámara','camara','date')}${fi('F. ingreso','ingreso','date')}${fi('F. teórica','teorica','date')}
-      <tr><td>F. límite</td><td>${e?`<input type="date" class="detail-inline-input" value="${s.limite?s.limite.split('/').reverse().join('-'):''}" style="${lS}" onchange="saveField('est',${currentEstDetailId},'limite',fmtDate(this.value))">`:`<span style="${lS}">${s.limite||'—'}</span>`}</td></tr>
-      ${fi('F. teórica salida','salida','date')}${fi('F. teórica liberación','libteor','date')}${fi('F. liberación','lib','date')}
-    </tbody></table></div>
-    <div class="card"><div class="card-title">Estado</div><table class="detail-table"><tbody>
-      ${fi('Estado','estado','select',ESTADOS)}${fi('Cumplió','cumpl','select',SN)}${fi('Cumpl. estabilidad','cumplEst','select',SN)}${fi('Aprobación','aprob','select',APROBS)}${fi('Semana aprob.','semana')}${fi('Condiciones salida','condsal')}${fi('Status','status')}
-      ${s.estado==='Cancelado'?fi('Motivo cancelación','motivo','textarea'):''}
-    </tbody></table></div>
-    <div class="card"><div class="card-title">Análisis FQ / Micro</div><table class="detail-table"><tbody>
-      ${fi('Analista FQ','analistFQ','select',USERS_LIST.filter(u=>['analyst','supervisor'].includes(u.rol)&&u.estado==='activo').map(u=>u.nombre))}
-      ${fi('F. análisis FQ inicio','fqi','date')}${fi('F. análisis FQ fin','fqf','date')}${fi('F. validación FQ','fqv','date')}
-      ${fi('Lleva micro','micro','select',['Sí','No'])}
-      ${fi('Analista micro','analistMicro','select',USERS_LIST.filter(u=>['analyst','supervisor'].includes(u.rol)&&u.estado==='activo').map(u=>u.nombre))}
-      ${fi('F. muestreo micro ini','msi','date')}${fi('F. muestreo micro fin','msf','date')}
-    </tbody></table></div>
-    <div class="card"><div class="card-title">Resultados</div><table class="detail-table"><tbody>
-      ${fi('Contenido','contenido')}${fi('Degradación 1','deg1')}${fi('Degradación 2','deg2')}${fi('Degradación 3','deg3')}${fi('Disolución','disol')}
-    </tbody></table></div>
-    <div class="card"><div class="card-title">Muestreo</div><table class="detail-table"><tbody>
-      ${fi('Límite inferior','limInf')}${fi('Límite superior','limSup')}${fi('Corredor','corredor')}${fi('Observaciones','obs','textarea')}
-    </tbody></table></div>
-    ${s.oos?`<div class="card oos-card" style="grid-column:1/-1"><div class="card-title oos-title">OOS — Fuera de especificación</div>${e?`<textarea class="detail-inline-textarea" style="width:100%;min-height:60px" onblur="saveField('est',${currentEstDetailId},'oos_obs',this.value)">${s.oos_obs||''}</textarea>`:`<p style="font-size:13px;line-height:1.5">${s.oos_obs||''}</p>`}</div>`:''}
-    <div class="card" style="grid-column:1/-1"><div class="card-title">Historial de este lote</div>
+
+    <div class="card"><div class="card-title">Historial de actividad</div>
       ${AUDIT_LOG.filter(a=>a.module==='est'&&a.study===currentEstDetailId).slice(0,6).map(auditRowHtml).join('')||'<p style="font-size:12px;color:var(--text3)">Sin cambios registrados.</p>'}
     </div>
+  </div>
+
+  <div style="margin-top:16px">
+    ${currentMuestreosPlan.length===0
+      ? '<div class="card"><p style="font-size:12px;color:var(--text3)">No hay cámaras ni muestreos registrados para este lote.</p></div>'
+      : currentMuestreosPlan.map(group => {
+          const lc = group.loteCamara;
+          const camara = lc.camaras || {};
+          const condicion = lc.condiciones || {};
+          return `<div class="card" style="margin-bottom:14px">
+            <div class="card-title">
+              Cámara: ${camara.nombre||'—'} · Condición: ${condicion.nombre||'—'} · ${lc.cantidad_muestras||'?'} muestras
+            </div>
+            ${group.muestreos.length===0
+              ? '<p style="font-size:12px;color:var(--text3)">Sin muestreos planeados.</p>'
+              : `<div class="table-wrap"><table>
+                  <thead><tr>
+                    <th>Tiempo (meses)</th>
+                    <th>F. teórica análisis</th>
+                    <th>F. límite análisis</th>
+                    <th>F. inf. muestreo</th>
+                    <th>Estado</th>
+                    <th>SCRUM</th>
+                  </tr></thead>
+                  <tbody>
+                    ${group.muestreos.map(m=>{
+                      const dl = m.fecha_limite ? Math.round((new Date(m.fecha_limite)-new Date())/86400000) : null;
+                      const rowCls = dl!==null&&dl<0?'row-danger':dl!==null&&dl<=15?'row-warning':'';
+                      const dlTxt = dl===null?'—':dl<0?`<span style="color:var(--danger);font-weight:500">Vencido</span>:dl<=15?<span style="color:var(--warning);font-weight:500">${dl}d</span>:${dl}d`;
+                      return `<tr class="${rowCls}">
+                        <td style="text-align:center">${m.tiempo_meses}m</td>
+                        <td>${m.fecha_teorica||'—'}</td>
+                        <td>${m.fecha_limite||'—'}</td>
+                        <td>${m.fecha_inf_muestreo||'—'}</td>
+                        <td>${estBadge(m.estado)}</td>
+                        <td>${m.scrum_id?`<button class="link-btn" onclick="goToScrum(${m.scrum_id})">Ver SCRUM</button>`:'—'}</td>
+                      </tr>`;
+                    }).join('')}
+                  </tbody>
+                </table></div>`
+            }
+          </div>`;
+        }).join('')
+    }
   </div>`;
 }
 
@@ -1945,6 +1983,12 @@ async function toggleUserStatus(id){
   AUDIT_LOG.unshift(entry); await dbInsertAudit(entry);
   renderUsersTable();
   renderUserListDropdown();
+}
+
+function goToScrum(id) {
+  currentModule = 'scrum';
+  currentPage = 'full';
+  showScrumDetail(id);
 }
 
 /* ============================================================
