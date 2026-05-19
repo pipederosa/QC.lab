@@ -631,14 +631,14 @@ function renderEstDetail() {
                     <th>F. límite análisis</th>
                     <th>F. inf. muestreo</th>
                     <th>Estado</th>
-                    <th>SCRUM</th>
+                    <th>Acción</th>
                   </tr></thead>
                   <tbody>
                     ${group.muestreos.map(m=>{
                       const dl = m.fecha_limite ? Math.round((new Date(m.fecha_limite)-new Date())/86400000) : null;
                       const rowCls = dl!==null&&dl<0?'row-danger':dl!==null&&dl<=15?'row-warning':'';
                       const dlTxt = dl===null?'—':dl<0?'<span style="color:var(--danger);font-weight:500">Vencido</span>':dl<=15?'<span style="color:var(--warning);font-weight:500">'+dl+'d</span>':dl+'d';
-                      const scrumBtn = m.scrum_id?'<button class="link-btn" onclick="goToScrum('+m.scrum_id+')">Ver SCRUM</button>':'—';
+                      const scrumBtn = m.scrum_id?'<button class="link-btn" onclick="goToScrum('+m.scrum_id+')">Ver SCRUM</button>':m.estado==='Pendiente'?'<button class="btn btn-sm btn-primary" onclick="openRegistrarMuestreo('+m.id+','+currentEstDetailId+')">Registrar</button>':'—';
                       return '<tr class="'+rowCls+'"><td style="text-align:center">'+m.tiempo_meses+'m</td><td>'+(m.fecha_teorica||'—')+'</td><td>'+(m.fecha_limite||'—')+'</td><td>'+(m.fecha_inf_muestreo||'—')+'</td><td>'+estBadge(m.estado)+'</td><td>'+scrumBtn+'</td></tr>';
                     }).join('')}
                   </tbody>
@@ -1983,6 +1983,155 @@ function goToScrum(id) {
   currentModule = 'scrum';
   currentPage = 'full';
   showScrumDetail(id);
+}
+
+/* ============================================================
+   REGISTRAR MUESTREO REALIZADO
+   ============================================================ */
+let muestreoModal = null;
+
+function openRegistrarMuestreo(muestreoPlanId, loteId) {
+  // Cerrar modal anterior si existe
+  const existing = document.getElementById('muestreo-modal');
+  if(existing) existing.remove();
+
+  const analistas = USERS_LIST.filter(u=>['analyst','supervisor'].includes(u.rol)&&u.estado==='activo');
+
+  const modal = document.createElement('div');
+  modal.id = 'muestreo-modal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border-radius:var(--radius-lg);padding:24px;min-width:420px;max-width:500px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <div style="font-size:15px;font-weight:500;margin-bottom:16px">Registrar muestreo realizado</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Fecha de muestreo <span class="req-star">*</span></label>
+          <input type="date" id="mr-fecha">
+        </div>
+        <div class="field">
+          <label>Analista <span class="req-star">*</span></label>
+          <select id="mr-analista">
+            <option value="">Seleccionar...</option>
+            ${analistas.map(u=>`<option>${u.nombre}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Cantidad retirada <span class="req-star">*</span></label>
+          <input type="number" min="1" id="mr-cantidad" placeholder="Ej: 10">
+        </div>
+        <div class="field full-col">
+          <label>Observaciones</label>
+          <textarea id="mr-obs" style="min-height:60px"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="submitRegistrarMuestreo(${muestreoPlanId},${loteId})">Guardar y crear en SCRUM</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function closeModal() {
+  document.getElementById('muestreo-modal')?.remove();
+}
+
+async function submitRegistrarMuestreo(muestreoPlanId, loteId) {
+  const fecha    = document.getElementById('mr-fecha')?.value;
+  const analista = document.getElementById('mr-analista')?.value;
+  const cantidad = document.getElementById('mr-cantidad')?.value;
+  const obs      = document.getElementById('mr-obs')?.value || '';
+
+  if(!fecha || !analista || !cantidad) {
+    alert('Completá todos los campos obligatorios.');
+    return;
+  }
+
+  // Buscar el muestreo plan y el lote
+  const lote = LOTES_EST.find(x=>x.id===loteId);
+  if(!lote){ alert('No se encontró el lote.'); return; }
+
+  // Calcular límite QC = fecha muestreo + 1 mes
+  const fechaBase = new Date(fecha);
+  const limiteQC = new Date(fechaBase);
+  limiteQC.setMonth(limiteQC.getMonth() + 1);
+  const limiteQCStr = `${String(limiteQC.getDate()).padStart(2,'0')}/${String(limiteQC.getMonth()+1).padStart(2,'0')}/${limiteQC.getFullYear()}`;
+  const fechaStr = `${String(fechaBase.getDate()).padStart(2,'0')}/${String(fechaBase.getMonth()+1).padStart(2,'0')}/${fechaBase.getFullYear()}`;
+
+  // 1. Crear registro en SCRUM
+  const scrumRecord = {
+    id: null,
+    cod:              lote.codigo_producto || '',
+    planta:           '', // no tenemos planta en lotes_est, se puede editar después en SCRUM
+    desc:             lote.nombre_producto || '',
+    lote:             lote.lote,
+    div:              lote.division || '',
+    nInspeccion:      '',
+    prioridad:        'No',
+    fechaLimPrioridad:'',
+    identDeposito:    fechaStr,
+    limiteQC:         limiteQCStr,
+    ingresoFQ:        fechaStr,
+    spMicroConthLal:  'N/A',
+    spMicroEsterilidad:'N/A',
+    controlHigienico: 'No',
+    fechaFinEsterilidad:'',
+    fechaFinMicro:    '',
+    analistFQ:        analista,
+    fechaInicioAnalisis: fechaStr,
+    fechaFinAnalisis: '',
+    validacionFichaSAP:'',
+    finalQCSAP:       '',
+    obs:              obs,
+    status:           'En análisis',
+    statusFinal:      'Pendiente',
+    liberadoATiempo:  'Pendiente',
+    granelCompControl:'',
+    granel:           ''
+  };
+
+  const savedScrum = await dbInsertScrum(scrumRecord);
+  if(!savedScrum){ alert('Error al crear registro en SCRUM.'); return; }
+  SCRUM_RECORDS.push(savedScrum);
+
+  // 2. Guardar muestreo realizado
+  await dbInsertMuestreoReal({
+    muestreo_plan_id: muestreoPlanId,
+    fecha_muestreo:   fecha,
+    analista:         analista,
+    cantidad_retirada:Number(cantidad),
+    scrum_id:         savedScrum.id,
+    obs:              obs
+  });
+
+  // 3. Actualizar estado del muestreo plan
+  await dbUpdateMuestreoPlan(muestreoPlanId, {estado: 'Realizado'});
+
+  // Actualizar local
+  for(const group of currentMuestreosPlan) {
+    const m = group.muestreos.find(x=>x.id===muestreoPlanId);
+    if(m){ m.estado='Realizado'; m.scrum_id=savedScrum.id; }
+  }
+
+  // 4. Audit log
+  const entry = {
+    who:    currentUser.nombre,
+    what:   `Registró muestreo del lote ${lote.lote} — generó SCRUM ${savedScrum.cod}`,
+    when:   nowStr(),
+    field:  'muestreo',
+    old:    'Pendiente',
+    new:    'Realizado',
+    study:  loteId,
+    module: 'est'
+  };
+  AUDIT_LOG.unshift(entry);
+  await dbInsertAudit(entry);
+
+  closeModal();
+  alert('Muestreo registrado y lote creado en SCRUM.');
+
+  // Recargar detalle
+  await showEstLoteDetail(loteId);
 }
 
 /* ============================================================
