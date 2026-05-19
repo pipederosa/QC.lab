@@ -2117,7 +2117,7 @@ async function submitRegistrarMuestreo(muestreoPlanId, loteId) {
   // Audit en estabilidades
   const entry = {
     who:    currentUser.nombre,
-    what:   Registró muestreo del lote ${lote.lote} — generó SCRUM ${savedScrum.cod},
+    what:   `Registró muestreo del lote ${lote.lote} — generó SCRUM ${savedScrum.cod}`,
     when:   nowStr(),
     field:  'muestreo',
     old:    'Pendiente',
@@ -2131,7 +2131,7 @@ async function submitRegistrarMuestreo(muestreoPlanId, loteId) {
   // Audit en SCRUM
   const entrySCrum = {
     who:    analista,
-    what:   Lote creado desde estabilidad — lote ${lote.lote} (${lote.nombre_producto||''}),
+    what:   `Lote creado desde estabilidad — lote ${lote.lote} (${lote.nombre_producto||''})`,
     when:   nowStr(),
     field:  'creación',
     old:    '',
