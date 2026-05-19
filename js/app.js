@@ -2114,9 +2114,10 @@ async function submitRegistrarMuestreo(muestreoPlanId, loteId) {
   }
 
   // 4. Audit log
+  // Audit en estabilidades
   const entry = {
     who:    currentUser.nombre,
-    what:   `Registró muestreo del lote ${lote.lote} — generó SCRUM ${savedScrum.cod}`,
+    what:   Registró muestreo del lote ${lote.lote} — generó SCRUM ${savedScrum.cod},
     when:   nowStr(),
     field:  'muestreo',
     old:    'Pendiente',
@@ -2126,6 +2127,20 @@ async function submitRegistrarMuestreo(muestreoPlanId, loteId) {
   };
   AUDIT_LOG.unshift(entry);
   await dbInsertAudit(entry);
+
+  // Audit en SCRUM
+  const entrySCrum = {
+    who:    analista,
+    what:   Lote creado desde estabilidad — lote ${lote.lote} (${lote.nombre_producto||''}),
+    when:   nowStr(),
+    field:  'creación',
+    old:    '',
+    new:    savedScrum.cod,
+    study:  savedScrum.id,
+    module: 'scrum'
+  };
+  AUDIT_LOG.unshift(entrySCrum);
+  await dbInsertAudit(entrySCrum);
 
   closeModal();
   alert('Muestreo registrado y lote creado en SCRUM.');
