@@ -637,15 +637,9 @@ function renderEstDetail() {
                     ${group.muestreos.map(m=>{
                       const dl = m.fecha_limite ? Math.round((new Date(m.fecha_limite)-new Date())/86400000) : null;
                       const rowCls = dl!==null&&dl<0?'row-danger':dl!==null&&dl<=15?'row-warning':'';
-                      const dlTxt = dl===null?'—':dl<0?`<span style="color:var(--danger);font-weight:500">Vencido</span>:dl<=15?<span style="color:var(--warning);font-weight:500">${dl}d</span>:${dl}d`;
-                      return `<tr class="${rowCls}">
-                        <td style="text-align:center">${m.tiempo_meses}m</td>
-                        <td>${m.fecha_teorica||'—'}</td>
-                        <td>${m.fecha_limite||'—'}</td>
-                        <td>${m.fecha_inf_muestreo||'—'}</td>
-                        <td>${estBadge(m.estado)}</td>
-                        <td>${m.scrum_id?`<button class="link-btn" onclick="goToScrum(${m.scrum_id})">Ver SCRUM</button>`:'—'}</td>
-                      </tr>`;
+                      const dlTxt = dl===null?'—':dl<0?'<span style="color:var(--danger);font-weight:500">Vencido</span>':dl<=15?'<span style="color:var(--warning);font-weight:500">'+dl+'d</span>':dl+'d';
+                      const scrumBtn = m.scrum_id?'<button class="link-btn" onclick="goToScrum('+m.scrum_id+')">Ver SCRUM</button>':'—';
+                      return '<tr class="'+rowCls+'"><td style="text-align:center">'+m.tiempo_meses+'m</td><td>'+(m.fecha_teorica||'—')+'</td><td>'+(m.fecha_limite||'—')+'</td><td>'+(m.fecha_inf_muestreo||'—')+'</td><td>'+estBadge(m.estado)+'</td><td>'+scrumBtn+'</td></tr>';
                     }).join('')}
                   </tbody>
                 </table></div>`
