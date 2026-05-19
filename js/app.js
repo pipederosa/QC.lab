@@ -384,31 +384,28 @@ function refreshEstDashboard() {
 function buildEstResults() {
   const canCreate = ROLES[currentUser.rol].canCreate;
   return `<div class="filter-bar">
-    ${multiFilter('est-estado','Estado',['Pendiente','En proceso','Completo','Cancelado'])}
+    ${multiFilter('est-estado-mp','Estado',[{val:'Pendiente',label:'Pendiente'},{val:'Muestreado',label:'Muestreado'},{val:'Analizado',label:'Analizado'}],true)}
     ${multiFilter('est-div','División',['CH','PH'])}
-    ${multiFilter('est-oos','OOS',[{val:'si',label:'Con OOS'},{val:'no',label:'Sin OOS'}],true)}
     <input id="est-search" class="filter-input" placeholder="Buscar producto o lote...">
     <button class="btn btn-ghost btn-sm" id="est-clear" style="color:var(--danger)">✕ Limpiar</button>
     <div class="filter-actions">
       ${canCreate?'<button class="btn btn-primary" id="est-btn-new">+ Nuevo lote</button>':''}
-      <div class="export-wrap">
-        <button class="btn btn-ghost" id="est-export-toggle">Exportar ▾</button>
-        <div class="export-dropdown hidden" id="est-export-dd">
-          <button class="export-opt" id="est-exp-csv">CSV (.csv)</button>
-          <button class="export-opt" id="est-exp-xlsx">Excel (.xlsx)</button>
-        </div>
-      </div>
     </div>
   </div>
   <div class="active-filters" id="est-chips"></div>
   <div class="table-wrap">
-    <table id="est-table">
+    <table id="est-table" style="font-size:11px">
       <thead><tr>
-        <th onclick="estSort('nombre_producto')">Producto <span id="est-sort-nombre_producto"></span></th>
-        <th onclick="estSort('lote')">Lote <span id="est-sort-lote"></span></th>
-        <th onclick="estSort('division')">División <span id="est-sort-division"></span></th>
-        <th onclick="estSort('fecha_ingreso')">F. ingreso <span id="est-sort-fecha_ingreso"></span></th>
-        <th onclick="estSort('estado')">Estado <span id="est-sort-estado"></span></th>
+        <th>Lote</th>
+        <th>Código</th>
+        <th>Producto</th>
+        <th>División</th>
+        <th>Tiempo</th>
+        <th>F. ingreso</th>
+        <th>F. teórica análisis</th>
+        <th>F. muestreo</th>
+        <th>Estado</th>
+        <th>Resultado</th>
         <th></th>
       </tr></thead>
       <tbody id="est-tbody"></tbody>
@@ -419,18 +416,14 @@ function buildEstResults() {
 }
 
 function bindEstResults() {
-  bindMultiFilterGroup('est', ['estado','div','oos'], () => renderEstTable());
+  bindMultiFilterGroup('est', ['estado-mp','div'], () => renderEstTable());
   document.getElementById('est-search')?.addEventListener('input', () => renderEstTable());
   document.getElementById('est-clear')?.addEventListener('click', () => {
-    clearMultiFilters('est',['estado','div','oos']);
+    clearMultiFilters('est',['estado-mp','div']);
     document.getElementById('est-search').value='';
     renderEstTable();
   });
   document.getElementById('est-btn-new')?.addEventListener('click', () => navigateTo('form'));
-  document.getElementById('est-export-toggle')?.addEventListener('click', e=>{e.stopPropagation();document.getElementById('est-export-dd').classList.toggle('hidden');});
-  document.getElementById('est-exp-csv')?.addEventListener('click',  ()=>{document.getElementById('est-export-dd').classList.add('hidden');exportEstCSV();});
-  document.getElementById('est-exp-xlsx')?.addEventListener('click', ()=>{document.getElementById('est-export-dd').classList.add('hidden');exportEstXLSX();});
-  if (estKpiFilter) { applyEstKpiFilter(estKpiFilter); estKpiFilter = null; }
   renderEstTable();
 }
 
@@ -449,15 +442,32 @@ function checkMultiOption(dropId, val) {
 }
 
 function getEstFilteredData() {
-  const estados = getChecked('est-estado'), divs = getChecked('est-div'), oosV = getChecked('est-oos');
+  const estadosMP = getChecked('est-estado-mp');
+  const divs = getChecked('est-div');
   const q = (document.getElementById('est-search')?.value||'').toLowerCase();
-  let data = [...LOTES_EST];
-  if (estados.length) data = data.filter(s=>estados.includes(s.estado));
-  if (divs.length)    data = data.filter(s=>divs.includes(s.div));
-  if (oosV.includes('si')&&!oosV.includes('no')) data=data.filter(s=>s.oos);
-  if (oosV.includes('no')&&!oosV.includes('si')) data=data.filter(s=>!s.oos);
-  if (q) data=data.filter(s=>(s.prod||'').toLowerCase().includes(q)||(s.lote||'').toLowerCase().includes(q));
-  return data;
+
+  // Armar filas: una por cada muestreo plan
+  const rows = [];
+  for(const lote of LOTES_EST) {
+    if(divs.length && !divs.includes(lote.division)) continue;
+    if(q && !(lote.nombre_producto||'').toLowerCase().includes(q) && !(lote.lote||'').toLowerCase().includes(q) && !(lote.codigo_producto||'').toLowerCase().includes(q)) continue;
+    // Buscar muestreos de este lote en currentMuestreosPlan si está cargado, sino mostrar el lote solo
+    const grupos = currentMuestreosPlan.filter(g=>g.loteCamara?.lote_id===lote.id);
+    if(grupos.length===0) {
+      rows.push({lote, muestreo:null, real:null, scrum:null, estado:'Pendiente'});
+    } else {
+      for(const g of grupos) {
+        for(const m of g.muestreos) {
+          const real = m.muestreoReal || null;
+          const scrumRec = real?.scrum_id ? SCRUM_RECORDS.find(r=>r.id===real.scrum_id) : null;
+          const estado = !real ? 'Pendiente' : scrumRec?.statusFinal==='Terminado' ? 'Analizado' : 'Muestreado';
+          if(estadosMP.length && !estadosMP.includes(estado)) continue;
+          rows.push({lote, muestreo:m, real, scrum:scrumRec, estado, loteCamara:g.loteCamara});
+        }
+      }
+    }
+  }
+  return rows;
 }
 
 function estSort(col) {
@@ -468,33 +478,45 @@ function estSort(col) {
 function renderEstTable() {
   renderEstChips();
   const tbody=document.getElementById('est-tbody'), noR=document.getElementById('est-no-results'), footer=document.getElementById('est-footer');
-  let data = getEstFilteredData();
-  if (estSortCol) data = data.slice().sort((a,b)=>compareVal(a,b,estSortCol)*estSortDir);
- ['nombre_producto','lote','division','fecha_ingreso','estado'].forEach(col=>{
-    const el=document.getElementById('est-sort-'+col);
-    if(el)el.textContent=estSortCol===col?(estSortDir===1?'↑':'↓'):'';
-  });
+  const data = getEstFilteredData();
   if (!tbody) return;
   if (!data.length){tbody.innerHTML='';noR?.classList.remove('hidden');if(footer)footer.textContent='0 registros';return;}
   noR?.classList.add('hidden');
-  if(footer)footer.textContent=`${data.length} registro${data.length!==1?'s':''}`;
-  tbody.innerHTML=data.map(s=>{
-    return `<tr>
-      <td title="${s.nombre_producto||''}">${s.nombre_producto||'—'}</td>
-      <td>${s.lote}</td>
-      <td>${s.division||'—'}</td>
-      <td>${s.fecha_ingreso||'—'}</td>
-      <td>${estBadge(s.estado)}</td>
-      <td><button class="link-btn" onclick="showEstLoteDetail(${s.id})">Ver detalle</button></td>
+  if(footer)footer.textContent=`${data.length} muestreo${data.length!==1?'s':''}`;
+  const estadoStyle = (e)=>{
+    const bg = e==='Analizado'?'var(--success-light)':e==='Muestreado'?'var(--warning-light)':'var(--surface2)';
+    const col = e==='Analizado'?'var(--success-text)':e==='Muestreado'?'var(--warning-text)':'var(--text3)';
+    return `<span style="font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;background:${bg};color:${col}">${e}</span>`;
+  };
+  tbody.innerHTML=data.map(row=>{
+    const {lote, muestreo, real, scrum, estado} = row;
+    const dl = muestreo?.fecha_limite ? Math.round((new Date(muestreo.fecha_limite)-new Date())/86400000) : null;
+    const rowCls = estado==='Pendiente'&&dl!==null&&dl<0?'row-danger':estado==='Pendiente'&&dl!==null&&dl<=15?'row-warning':'';
+    return `<tr class="${rowCls}">
+      <td>${lote.lote}</td>
+      <td style="font-family:var(--font-mono);font-size:11px">${lote.codigo_producto||'—'}</td>
+      <td>${lote.nombre_producto||'—'}</td>
+      <td>${lote.division||'—'}</td>
+      <td style="text-align:center">${muestreo?muestreo.tiempo_meses+'m':'—'}</td>
+      <td>${lote.fecha_ingreso||'—'}</td>
+      <td>${muestreo?.fecha_teorica||'—'}</td>
+      <td>${real?.fecha_muestreo||'—'}</td>
+      <td>${estadoStyle(estado)}</td>
+      <td>${scrum?.status||'—'}</td>
+      <td><button class="link-btn" onclick="showEstLoteDetail(${lote.id})">Ver detalle</button></td>
     </tr>`;
   }).join('');
 }
 
 function renderEstChips() {
   const c=document.getElementById('est-chips');if(!c)return;
-  const labels={estado:'Estado',div:'División',oos:'OOS'};
-  const oosL={si:'Con OOS',no:'Sin OOS'};
-  c.innerHTML=['estado','div','oos'].flatMap(k=>getChecked('est-'+k).map(v=>`<div class="filter-chip"><span>${labels[k]}: ${k==='oos'?oosL[v]||v:v}</span><button class="chip-remove" onclick="removeEstChip('${k}','${v}')">×</button></div>`)).join('');
+  const labels={'estado-mp':'Estado',div:'División'};
+  c.innerHTML=['estado-mp','div'].flatMap(k=>getChecked('est-'+k).map(v=>`<div class="filter-chip"><span>${labels[k]}: ${v}</span><button class="chip-remove" onclick="removeEstChip('${k}','${v}')">×</button></div>`)).join('');
+}
+
+function removeEstChip(k,v){
+  const cb=document.querySelector(`#mf-drop-est-${k} input[value="${v}"]`);if(cb)cb.checked=false;
+  updateMultiBtn('est',k);renderEstTable();
 }
 
 function removeEstChip(k,v){
@@ -520,26 +542,21 @@ function exportEstXLSX() {
    ============================================================ */
 let currentEstDetailId = null;
 
-function showEstLoteDetail(id) {
-  pendingChanges = {};
-  currentEstDetailId = id;
-  detailEditMode = false;
-  currentPage = 'full';
-  renderNav();
-  renderContent();
-}
-
 async function showEstLoteDetail(id) {
   pendingChanges = {};
   currentEstDetailId = id;
   detailEditMode = false;
   currentPage = 'full';
   renderNav();
-  // Cargar cámaras y muestreos del lote
   currentLoteCamaras = await dbGetLoteCamaras(id);
   currentMuestreosPlan = [];
   for(const lc of currentLoteCamaras) {
     const ms = await dbGetMuestreosPlan(lc.id);
+    // Para cada muestreo plan, cargar el muestreo real si existe
+    for(const m of ms) {
+      const reales = await dbGetMuestreosReal(m.id);
+      m.muestreoReal = reales.length > 0 ? reales[0] : null;
+    }
     currentMuestreosPlan.push({loteCamara: lc, muestreos: ms});
   }
   renderContent();
@@ -583,7 +600,6 @@ function renderEstDetail() {
   if (!currentEstDetailId) return '<div style="padding:40px;text-align:center;color:var(--text3)">Selecciona un lote desde Resultados.</div>';
   const s = LOTES_EST.find(x=>x.id===currentEstDetailId) || STUDIES.find(x=>x.id===currentEstDetailId);
   if(!s) return '';
-  const e = detailEditMode && ROLES[currentUser.rol].canEdit;
 
   return `<div class="detail-header">
     <button class="btn btn-ghost btn-sm" onclick="navigateTo('results')">← Volver</button>
@@ -600,10 +616,11 @@ function renderEstDetail() {
       <tr><td>Nombre semiterminado</td><td>${s.nombre_semiterminado||'—'}</td></tr>
       <tr><td>Lote</td><td>${s.lote||'—'}</td></tr>
       <tr><td>División</td><td>${s.division||s.div||'—'}</td></tr>
+      <tr><td>Fecha ingreso</td><td>${s.fecha_ingreso||'—'}</td></tr>
       <tr><td>Estado</td><td>${estBadge(s.estado)}</td></tr>
       <tr><td>Creado por</td><td>${s.creado_por||'—'}</td></tr>
       <tr><td>Fecha creación</td><td>${s.creado_en||'—'}</td></tr>
-      ${s.obs?`<tr><td>Observaciones</td><td>${s.obs}</td></tr>`:''}
+      ${s.obs?`<tr><td>Observaciones</td><td><div style="white-space:pre-wrap;word-break:break-word">${s.obs}</div></td></tr>`:''}
     </tbody></table></div>
 
     <div class="card"><div class="card-title">Historial de actividad</div>
@@ -618,38 +635,68 @@ function renderEstDetail() {
           const lc = group.loteCamara;
           const camara = lc.camaras || {};
           const condicion = lc.condiciones || {};
-          return `<div class="card" style="margin-bottom:14px">
-            <div class="card-title">
-              Cámara: ${camara.nombre||'—'} · Condición: ${condicion.nombre||'—'} · ${lc.cantidad_muestras||'?'} muestras
-            </div>
-            ${group.muestreos.length===0
+          const totalRetirado = group.muestreos.reduce((sum,m)=>sum+(m.muestreoReal?.cantidad_retirada||0),0);
+          const restantes = (lc.cantidad_muestras||0) - totalRetirado;
+
+          return '<div class="card" style="margin-bottom:14px">' +
+            '<div class="card-title" style="display:flex;justify-content:space-between;align-items:center">' +
+              '<span>Cámara: '+(camara.nombre||'—')+' · Condición: '+(condicion.nombre||'—')+'</span>' +
+              '<span style="font-size:11px;color:var(--text2)">'+
+                lc.cantidad_muestras+' muestras iniciales · '+
+                '<strong style="color:'+(restantes<=0?'var(--danger)':'var(--success)')+'">'+restantes+' restantes</strong>'+
+              '</span>'+
+            '</div>' +
+            (group.muestreos.length===0
               ? '<p style="font-size:12px;color:var(--text3)">Sin muestreos planeados.</p>'
-              : `<div class="table-wrap"><table>
-                  <thead><tr>
-                    <th>Tiempo (meses)</th>
-                    <th>F. teórica análisis</th>
-                    <th>F. límite análisis</th>
-                    <th>F. inf. muestreo</th>
-                    <th>Estado</th>
-                    <th>Acción</th>
-                  </tr></thead>
-                  <tbody>
-                    ${group.muestreos.map(m=>{
-                      const dl = m.fecha_limite ? Math.round((new Date(m.fecha_limite)-new Date())/86400000) : null;
-                      const rowCls = dl!==null&&dl<0?'row-danger':dl!==null&&dl<=15?'row-warning':'';
-                      const dlTxt = dl===null?'—':dl<0?'<span style="color:var(--danger);font-weight:500">Vencido</span>':dl<=15?'<span style="color:var(--warning);font-weight:500">'+dl+'d</span>':dl+'d';
-                      const scrumBtn = m.scrum_id?'<button class="link-btn" onclick="goToScrum('+m.scrum_id+')">Ver SCRUM</button>':m.estado==='Pendiente'?'<button class="btn btn-sm btn-primary" onclick="openRegistrarMuestreo('+m.id+','+currentEstDetailId+')">Registrar</button>':'—';
-                      return '<tr class="'+rowCls+'"><td style="text-align:center">'+m.tiempo_meses+'m</td><td>'+(m.fecha_teorica||'—')+'</td><td>'+(m.fecha_limite||'—')+'</td><td>'+(m.fecha_inf_muestreo||'—')+'</td><td>'+estBadge(m.estado)+'</td><td>'+scrumBtn+'</td></tr>';
-                    }).join('')}
-                  </tbody>
-                </table></div>`
-            }
-          </div>`;
+              : '<div class="table-wrap"><table style="font-size:11px">' +
+                  '<thead><tr>' +
+                    '<th>Tiempo</th>' +
+                    '<th>F. teórica análisis</th>' +
+                    '<th>F. teórica muestreo</th>' +
+                    '<th>F. inf. muestreo</th>' +
+                    '<th>Estado</th>' +
+                    '<th>F. muestreo</th>' +
+                    '<th>Cant. muestreada</th>' +
+                    '<th>Obs. muestreo</th>' +
+                    '<th>F. fin análisis</th>' +
+                    '<th>Resultado</th>' +
+                    '<th>Acción</th>' +
+                  '</tr></thead>' +
+                  '<tbody>' +
+                  group.muestreos.map(m=>{
+                    const real = m.muestreoReal;
+                    const scrumRec = real?.scrum_id ? SCRUM_RECORDS.find(r=>r.id===real.scrum_id) : null;
+                    const estado = !real ? 'Pendiente' : scrumRec?.statusFinal==='Terminado' ? 'Analizado' : 'Muestreado';
+                    const estadoColor = estado==='Analizado'?'var(--success-text)':estado==='Muestreado'?'var(--warning-text)':'var(--text3)';
+                    const estadoBg = estado==='Analizado'?'var(--success-light)':estado==='Muestreado'?'var(--warning-light)':'var(--surface2)';
+                    const dl = m.fecha_limite ? Math.round((new Date(m.fecha_limite)-new Date())/86400000) : null;
+                    const rowCls = !real && dl!==null&&dl<0?'row-danger':!real&&dl!==null&&dl<=15?'row-warning':'';
+                    const scrumBtn = real?.scrum_id
+                      ? '<button class="link-btn" onclick="goToScrum('+real.scrum_id+')">Ver SCRUM</button>'
+                      : estado==='Pendiente'
+                        ? '<button class="btn btn-sm btn-primary" onclick="openRegistrarMuestreo('+m.id+','+currentEstDetailId+')">Registrar</button>'
+                        : '—';
+                    return '<tr class="'+rowCls+'">' +
+                      '<td style="text-align:center">'+m.tiempo_meses+'m</td>' +
+                      '<td>'+(m.fecha_teorica||'—')+'</td>' +
+                      '<td>'+(m.fecha_teorica||'—')+'</td>' +
+                      '<td>'+(m.fecha_inf_muestreo||'—')+'</td>' +
+                      '<td><span style="font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;background:'+estadoBg+';color:'+estadoColor+'">'+estado+'</span></td>' +
+                      '<td>'+(real?.fecha_muestreo||'—')+'</td>' +
+                      '<td style="text-align:center">'+(real?.cantidad_retirada||'—')+'</td>' +
+                      '<td style="max-width:150px;white-space:normal">'+(real?.obs||'—')+'</td>' +
+                      '<td>'+(scrumRec?.fechaFinAnalisis||'—')+'</td>' +
+                      '<td>'+(scrumRec?.status||'—')+'</td>' +
+                      '<td>'+scrumBtn+'</td>' +
+                    '</tr>';
+                  }).join('') +
+                  '</tbody></table></div>'
+            ) +
+          '</div>';
         }).join('')
     }
   </div>`;
 }
-
 /* ============================================================
    ESTABILIDADES — FORM (nuevo flujo)
    ============================================================ */
@@ -2082,7 +2129,7 @@ async function submitRegistrarMuestreo(muestreoPlanId, loteId) {
     fechaFinAnalisis: '',
     validacionFichaSAP:'',
     finalQCSAP:       '',
-    obs:              obs,
+    obs:              '',
     status:           'En análisis',
     statusFinal:      'Pendiente',
     liberadoATiempo:  'Pendiente',
