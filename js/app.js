@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   CONDICIONES   = await dbGetCondiciones();
   CAMARAS       = await dbGetCamaras();
   LOTES_EST     = await dbGetLotesEst();
+   await cargarTodosMuestreos();
 
   if (!USERS_LIST || USERS_LIST.length === 0) {
     document.body.innerHTML = '<div style="padding:40px;color:red">Error conectando a Supabase. Revisá la consola.</div>';
@@ -381,6 +382,27 @@ function refreshEstDashboard() {
 /* ============================================================
    ESTABILIDADES — RESULTS
    ============================================================ */
+/* ---- Carga todos los muestreos de todos los lotes ---- */
+let todosLosMuestreos = []; // [{lote, loteCamara, muestreo, real, scrum, estado}]
+
+async function cargarTodosMuestreos() {
+  todosLosMuestreos = [];
+  for(const lote of LOTES_EST) {
+    const lcs = await dbGetLoteCamaras(lote.id);
+    for(const lc of lcs) {
+      const ms = await dbGetMuestreosPlan(lc.id);
+      for(const m of ms) {
+        const reales = await dbGetMuestreosReal(m.id);
+        m.muestreoReal = reales.length > 0 ? reales[0] : null;
+        const real = m.muestreoReal;
+        const scrumRec = real?.scrum_id ? SCRUM_RECORDS.find(r=>r.id===real.scrum_id) : null;
+        const estado = !real ? 'Pendiente' : scrumRec?.statusFinal==='Terminado' ? 'Analizado' : 'Muestreado';
+        todosLosMuestreos.push({lote, loteCamara:lc, muestreo:m, real, scrum:scrumRec, estado});
+      }
+    }
+  }
+}
+
 function buildEstResults() {
   const canCreate = ROLES[currentUser.rol].canCreate;
   return `<div class="filter-bar">
@@ -446,27 +468,16 @@ function getEstFilteredData() {
   const divs = getChecked('est-div');
   const q = (document.getElementById('est-search')?.value||'').toLowerCase();
 
-  // Armar filas: una por cada muestreo plan
-  const rows = [];
-  for(const lote of LOTES_EST) {
-    if(divs.length && !divs.includes(lote.division)) continue;
-    if(q && !(lote.nombre_producto||'').toLowerCase().includes(q) && !(lote.lote||'').toLowerCase().includes(q) && !(lote.codigo_producto||'').toLowerCase().includes(q)) continue;
-    // Buscar muestreos de este lote en currentMuestreosPlan si está cargado, sino mostrar el lote solo
-    const grupos = currentMuestreosPlan.filter(g=>g.loteCamara?.lote_id===lote.id);
-    if(grupos.length===0) {
-      rows.push({lote, muestreo:null, real:null, scrum:null, estado:'Pendiente'});
-    } else {
-      for(const g of grupos) {
-        for(const m of g.muestreos) {
-          const real = m.muestreoReal || null;
-          const scrumRec = real?.scrum_id ? SCRUM_RECORDS.find(r=>r.id===real.scrum_id) : null;
-          const estado = !real ? 'Pendiente' : scrumRec?.statusFinal==='Terminado' ? 'Analizado' : 'Muestreado';
-          if(estadosMP.length && !estadosMP.includes(estado)) continue;
-          rows.push({lote, muestreo:m, real, scrum:scrumRec, estado, loteCamara:g.loteCamara});
-        }
-      }
-    }
-  }
+  let rows = [...todosLosMuestreos];
+
+  if(divs.length) rows = rows.filter(r=>divs.includes(r.lote.division));
+  if(estadosMP.length) rows = rows.filter(r=>estadosMP.includes(r.estado));
+  if(q) rows = rows.filter(r=>
+    (r.lote.nombre_producto||'').toLowerCase().includes(q) ||
+    (r.lote.lote||'').toLowerCase().includes(q) ||
+    (r.lote.codigo_producto||'').toLowerCase().includes(q)
+  );
+
   return rows;
 }
 
@@ -2192,7 +2203,8 @@ async function submitRegistrarMuestreo(muestreoPlanId, loteId) {
   closeModal();
   alert('Muestreo registrado y lote creado en SCRUM.');
 
-  // Recargar detalle
+  // Recargar muestreos globales y detalle
+  await cargarTodosMuestreos();
   await showEstLoteDetail(loteId);
 }
 
