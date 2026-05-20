@@ -423,8 +423,7 @@ function buildEstResults() {
         ${canCreate?'<button class="btn btn-primary" id="est-btn-new">+ Nuevo lote</button>':''}
       </div>
     </div>
-    <div class="filter-bar" style="flex-wrap:wrap;align-items:center">
-      <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">FECHAS:</span>
+    <div class="filter-bar" style="flex-wrap:wrap;align-items:center;gap:12px">
       ${dateRangeFilter('est-f-ingreso','F. ingreso')}
       ${dateRangeFilter('est-f-teorica','F. teórica')}
       ${dateRangeFilter('est-f-muestreo','F. muestreo')}
@@ -2326,10 +2325,10 @@ function detailField(rec, id, label, key, type, opts, editable, mod) {
    ============================================================ */
 /* ---- SEARCHABLE MULTI FILTER ---- */
 function searchableMultiFilter(id, label, opts) {
-  return `<div class="multi-filter-wrap" style="position:relative">
+  return `<div class="multi-filter-wrap">
     <button class="multi-filter-btn" id="mf-btn-${id}" onclick="toggleMultiFilter('smf-${id}')">${label} <span class="mf-count hidden" id="mf-count-${id}"></span>▾</button>
     <div class="multi-filter-dropdown hidden" id="mf-drop-smf-${id}" style="min-width:220px">
-      <input type="text" class="filter-input" placeholder="Buscar..." id="smf-search-${id}" style="width:100%;margin-bottom:6px;height:28px;font-size:11px" oninput="filterSearchableOpts('${id}',this.value)">
+      <input type="text" class="filter-input" placeholder="Buscar..." id="smf-search-${id}" style="width:100%;margin-bottom:6px" oninput="filterSearchableOpts('${id}',this.value)">
       <div id="smf-opts-${id}" style="max-height:180px;overflow-y:auto">
         ${opts.map(o=>`<label class="mf-option"><input type="checkbox" value="${o}" onchange="updateSearchableCount('${id}')"> ${o}</label>`).join('')}
       </div>
@@ -2372,17 +2371,17 @@ function clearSearchableMultiFilter(id) {
 
 /* ---- DATE RANGE FILTER ---- */
 function dateRangeFilter(id, label) {
-  return `<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-    <span style="font-size:11px;color:var(--text2)">${label}:</span>
-    <select id="${id}-mode" style="font-size:11px;padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);height:28px">
+  return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+    <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${label}:</span>
+    <select id="${id}-mode" class="filter-select">
       <option value="">Sin filtro</option>
       <option value="antes">Antes de</option>
       <option value="despues">Después de</option>
       <option value="entre">Entre</option>
     </select>
-    <input type="date" id="${id}-val1" style="font-size:11px;padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);height:28px;display:none">
-    <span id="${id}-sep" style="font-size:11px;display:none">y</span>
-    <input type="date" id="${id}-val2" style="font-size:11px;padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);height:28px;display:none">
+    <input type="date" id="${id}-val1" class="filter-input" style="width:140px;display:none">
+    <span id="${id}-sep" style="font-size:11px;color:var(--text3);display:none">y</span>
+    <input type="date" id="${id}-val2" class="filter-input" style="width:140px;display:none">
   </div>`;
 }
 
