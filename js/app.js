@@ -405,13 +405,29 @@ async function cargarTodosMuestreos() {
 
 function buildEstResults() {
   const canCreate = ROLES[currentUser.rol].canCreate;
-  return `<div class="filter-bar">
-    ${multiFilter('est-estado-mp','Estado',[{val:'Pendiente',label:'Pendiente'},{val:'Muestreado',label:'Muestreado'},{val:'Analizado',label:'Analizado'}],true)}
-    ${multiFilter('est-div','División',['CH','PH'])}
-    <input id="est-search" class="filter-input" placeholder="Buscar producto o lote...">
-    <button class="btn btn-ghost btn-sm" id="est-clear" style="color:var(--danger)">✕ Limpiar</button>
-    <div class="filter-actions">
-      ${canCreate?'<button class="btn btn-primary" id="est-btn-new">+ Nuevo lote</button>':''}
+  // Opciones dinámicas para desplegables
+  const lotesOpts   = [...new Set(LOTES_EST.map(l=>l.lote).filter(Boolean))].sort();
+  const codigosOpts = [...new Set(LOTES_EST.map(l=>l.codigo_producto).filter(Boolean))].sort();
+  const camarasOpts = [...new Set(CAMARAS.map(c=>c.nombre).filter(Boolean))].sort();
+
+  return `<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+    <div class="filter-bar" style="flex-wrap:wrap">
+      ${multiFilter('est-estado-mp','Estado',[{val:'Pendiente',label:'Pendiente'},{val:'Muestreado',label:'Muestreado'},{val:'Analizado',label:'Analizado'}],true)}
+      ${multiFilter('est-div','División',['CH','PH'])}
+      ${searchableMultiFilter('est-lote','Lote',lotesOpts)}
+      ${searchableMultiFilter('est-codigo','Código',codigosOpts)}
+      ${searchableMultiFilter('est-camara','Cámara',camarasOpts)}
+      <input id="est-search" class="filter-input" placeholder="Buscar producto...">
+      <button class="btn btn-ghost btn-sm" id="est-clear" style="color:var(--danger)">✕ Limpiar</button>
+      <div class="filter-actions">
+        ${canCreate?'<button class="btn btn-primary" id="est-btn-new">+ Nuevo lote</button>':''}
+      </div>
+    </div>
+    <div class="filter-bar" style="flex-wrap:wrap;align-items:center">
+      <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">FECHAS:</span>
+      ${dateRangeFilter('est-f-ingreso','F. ingreso')}
+      ${dateRangeFilter('est-f-teorica','F. teórica')}
+      ${dateRangeFilter('est-f-muestreo','F. muestreo')}
     </div>
   </div>
   <div class="active-filters" id="est-chips"></div>
@@ -440,10 +456,28 @@ function buildEstResults() {
 
 function bindEstResults() {
   bindMultiFilterGroup('est', ['estado-mp','div'], () => renderEstTable());
+  bindSearchableMultiFilter('est-lote',   () => renderEstTable());
+  bindSearchableMultiFilter('est-codigo', () => renderEstTable());
+  bindSearchableMultiFilter('est-camara', () => renderEstTable());
   document.getElementById('est-search')?.addEventListener('input', () => renderEstTable());
+  // Filtros de fecha
+  ['est-f-ingreso','est-f-teorica','est-f-muestreo'].forEach(id => {
+    document.getElementById(id+'-mode')?.addEventListener('change', () => { toggleDateRangeInputs(id); renderEstTable(); });
+    document.getElementById(id+'-val1')?.addEventListener('change', () => renderEstTable());
+    document.getElementById(id+'-val2')?.addEventListener('change', () => renderEstTable());
+  });
   document.getElementById('est-clear')?.addEventListener('click', () => {
     clearMultiFilters('est',['estado-mp','div']);
+    clearSearchableMultiFilter('est-lote');
+    clearSearchableMultiFilter('est-codigo');
+    clearSearchableMultiFilter('est-camara');
     document.getElementById('est-search').value='';
+    ['est-f-ingreso','est-f-teorica','est-f-muestreo'].forEach(id => {
+      const mode = document.getElementById(id+'-mode'); if(mode) mode.value='';
+      const v1 = document.getElementById(id+'-val1'); if(v1) v1.value='';
+      const v2 = document.getElementById(id+'-val2'); if(v2) v2.value='';
+      toggleDateRangeInputs(id);
+    });
     renderEstTable();
   });
   document.getElementById('est-btn-new')?.addEventListener('click', () => navigateTo('form'));
@@ -465,19 +499,31 @@ function checkMultiOption(dropId, val) {
 }
 
 function getEstFilteredData() {
-  const estadosMP = getChecked('est-estado-mp');
-  const divs = getChecked('est-div');
-  const q = (document.getElementById('est-search')?.value||'').toLowerCase();
+  const estadosMP  = getChecked('est-estado-mp');
+  const divs       = getChecked('est-div');
+  const lotes      = getCheckedSearchable('est-lote');
+  const codigos    = getCheckedSearchable('est-codigo');
+  const camaras    = getCheckedSearchable('est-camara');
+  const q          = (document.getElementById('est-search')?.value||'').toLowerCase();
 
   let rows = [...todosLosMuestreos];
 
-  if(divs.length) rows = rows.filter(r=>divs.includes(r.lote.division));
   if(estadosMP.length) rows = rows.filter(r=>estadosMP.includes(r.estado));
-  if(q) rows = rows.filter(r=>
-    (r.lote.nombre_producto||'').toLowerCase().includes(q) ||
-    (r.lote.lote||'').toLowerCase().includes(q) ||
-    (r.lote.codigo_producto||'').toLowerCase().includes(q)
-  );
+  if(divs.length)      rows = rows.filter(r=>divs.includes(r.lote.division));
+  if(lotes.length)     rows = rows.filter(r=>lotes.includes(r.lote.lote));
+  if(codigos.length)   rows = rows.filter(r=>codigos.includes(r.lote.codigo_producto));
+  if(camaras.length)   rows = rows.filter(r=>camaras.includes(r.loteCamara?.camaras?.nombre));
+  if(q) rows = rows.filter(r=>(r.lote.nombre_producto||'').toLowerCase().includes(q));
+
+  // Filtros de fecha
+  rows = rows.filter(r=>{
+    const fi = r.lote.fecha_ingreso ? r.lote.fecha_ingreso.split('/').reverse().join('-') : '';
+    const ft = r.muestreo?.fecha_teorica || '';
+    const fm = r.real?.fecha_muestreo || '';
+    return applyDateFilter(fi,'est-f-ingreso') &&
+           applyDateFilter(ft,'est-f-teorica') &&
+           applyDateFilter(fm,'est-f-muestreo');
+  });
 
   return rows;
 }
@@ -2278,6 +2324,93 @@ function detailField(rec, id, label, key, type, opts, editable, mod) {
 /* ============================================================
    MULTI-FILTER UTILITIES
    ============================================================ */
+/* ---- SEARCHABLE MULTI FILTER ---- */
+function searchableMultiFilter(id, label, opts) {
+  return `<div class="multi-filter-wrap" style="position:relative">
+    <button class="multi-filter-btn" id="mf-btn-${id}" onclick="toggleMultiFilter('smf-${id}')">${label} <span class="mf-count hidden" id="mf-count-${id}"></span>▾</button>
+    <div class="multi-filter-dropdown hidden" id="mf-drop-smf-${id}" style="min-width:220px">
+      <input type="text" class="filter-input" placeholder="Buscar..." id="smf-search-${id}" style="width:100%;margin-bottom:6px;height:28px;font-size:11px" oninput="filterSearchableOpts('${id}',this.value)">
+      <div id="smf-opts-${id}" style="max-height:180px;overflow-y:auto">
+        ${opts.map(o=>`<label class="mf-option"><input type="checkbox" value="${o}" onchange="updateSearchableCount('${id}')"> ${o}</label>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function bindSearchableMultiFilter(id, onChange) {
+  const drop = document.getElementById(`mf-drop-smf-${id}`);
+  drop?.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => { updateSearchableCount(id); onChange(); });
+  });
+}
+
+function filterSearchableOpts(id, q) {
+  const opts = document.getElementById(`smf-opts-${id}`);
+  if(!opts) return;
+  opts.querySelectorAll('.mf-option').forEach(label => {
+    label.style.display = label.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function updateSearchableCount(id) {
+  const checked = getCheckedSearchable(id);
+  const btn = document.getElementById(`mf-btn-${id}`);
+  const cnt = document.getElementById(`mf-count-${id}`);
+  if(!btn||!cnt) return;
+  if(checked.length){ btn.classList.add('has-selection'); cnt.textContent=checked.length; cnt.classList.remove('hidden'); }
+  else { btn.classList.remove('has-selection'); cnt.classList.add('hidden'); }
+}
+
+function getCheckedSearchable(id) {
+  return [...(document.getElementById(`mf-drop-smf-${id}`)?.querySelectorAll('input[type="checkbox"]:checked')||[])].map(c=>c.value);
+}
+
+function clearSearchableMultiFilter(id) {
+  document.getElementById(`mf-drop-smf-${id}`)?.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  updateSearchableCount(id);
+}
+
+/* ---- DATE RANGE FILTER ---- */
+function dateRangeFilter(id, label) {
+  return `<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+    <span style="font-size:11px;color:var(--text2)">${label}:</span>
+    <select id="${id}-mode" style="font-size:11px;padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);height:28px">
+      <option value="">Sin filtro</option>
+      <option value="antes">Antes de</option>
+      <option value="despues">Después de</option>
+      <option value="entre">Entre</option>
+    </select>
+    <input type="date" id="${id}-val1" style="font-size:11px;padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);height:28px;display:none">
+    <span id="${id}-sep" style="font-size:11px;display:none">y</span>
+    <input type="date" id="${id}-val2" style="font-size:11px;padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);height:28px;display:none">
+  </div>`;
+}
+
+function toggleDateRangeInputs(id) {
+  const mode = document.getElementById(id+'-mode')?.value;
+  const v1 = document.getElementById(id+'-val1');
+  const v2 = document.getElementById(id+'-val2');
+  const sep = document.getElementById(id+'-sep');
+  if(!v1) return;
+  v1.style.display = mode ? '' : 'none';
+  v2.style.display = mode==='entre' ? '' : 'none';
+  if(sep) sep.style.display = mode==='entre' ? '' : 'none';
+}
+
+function applyDateFilter(dateStr, filterId) {
+  const mode = document.getElementById(filterId+'-mode')?.value;
+  if(!mode || !dateStr) return true;
+  const d = new Date(dateStr);
+  const v1 = document.getElementById(filterId+'-val1')?.value;
+  const v2 = document.getElementById(filterId+'-val2')?.value;
+  if(!v1) return true;
+  const d1 = new Date(v1);
+  if(mode==='antes')  return d <= d1;
+  if(mode==='despues') return d >= d1;
+  if(mode==='entre' && v2) { const d2=new Date(v2); return d>=d1 && d<=d2; }
+  return true;
+}
+   
 function multiFilter(id, label, opts, isKV=false) {
   const options = isKV
     ? opts.map(o=>typeof o==='object'?`<label class="mf-option"><input type="checkbox" value="${o.val}"> ${o.label}</label>`:`<label class="mf-option"><input type="checkbox" value="${o}"> ${o}</label>`).join('')
