@@ -422,6 +422,7 @@ function buildEstResults() {
         <th>Código</th>
         <th>Producto</th>
         <th>División</th>
+        <th>Cámara</th>
         <th>Tiempo</th>
         <th>F. ingreso</th>
         <th>F. teórica análisis</th>
@@ -508,6 +509,7 @@ function renderEstTable() {
       <td style="font-family:var(--font-mono);font-size:11px">${lote.codigo_producto||'—'}</td>
       <td>${lote.nombre_producto||'—'}</td>
       <td>${lote.division||'—'}</td>
+      <td>${row.loteCamara?.camaras?.nombre||'—'}</td>
       <td style="text-align:center">${muestreo?muestreo.tiempo_meses+'m':'—'}</td>
       <td>${lote.fecha_ingreso||'—'}</td>
       <td>${muestreo?.fecha_teorica||'—'}</td>
